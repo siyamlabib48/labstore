@@ -4,6 +4,9 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // '/' for the Base44-hosted build; the GitHub Pages workflow sets
+  // VITE_BASE_PATH=/labstore/ because Pages serves the repo under a subpath.
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [
     base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
