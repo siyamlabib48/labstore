@@ -1,0 +1,119 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Id of the member who receives this notification"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "announcement",
+        "friend_request",
+        "friend_accept",
+        "friend_approval_needed",
+        "friend_approval_approved",
+        "friend_approval_rejected",
+        "post_like",
+        "post_comment",
+        "comment_reply",
+        "homework",
+        "holiday",
+        "batch_update",
+        "new_upload"
+      ],
+      "enumColors": [
+        "purple",
+        "yellow",
+        "green",
+        "red",
+        "green",
+        "gray",
+        "pink",
+        "blue",
+        "blue",
+        "blue",
+        "green",
+        "purple",
+        "yellow"
+      ],
+      "default": "announcement",
+      "description": "What triggered the notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short notification headline"
+    },
+    "body": {
+      "type": "string",
+      "description": "Optional supporting line"
+    },
+    "link": {
+      "type": "string",
+      "description": "In-app path opened when the notification is tapped"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Name of the member who triggered it, when relevant"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the recipient has read it"
+    }
+  },
+  "required": [
+    "user_id",
+    "type",
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    // Notifications are created ONLY by backend functions (notify,
+    // manageFriendApproval, manageWork) through the service role, which
+    // bypasses RLS. Client-side creation is admin-only so a member can no
+    // longer forge a notification — previously any signed-in user could
+    // create one addressed to themselves with an arbitrary type and title.
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

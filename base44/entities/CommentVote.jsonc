@@ -1,0 +1,85 @@
+{
+  "name": "CommentVote",
+  "type": "object",
+  "properties": {
+    "comment_id": {
+      "type": "string",
+      "description": "Id of the comment or reply that was voted on"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Id of the member who voted"
+    },
+    "value": {
+      "type": "number",
+      "default": 1,
+      "description": "1 for an upvote, -1 for a downvote"
+    }
+  },
+  "required": [
+    "comment_id",
+    "user_id",
+    "value"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            },
+            {
+              "user_condition": {
+                "data.approval_status": "approved"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "create": {
+      "$and": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "data.approval_status": "approved"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

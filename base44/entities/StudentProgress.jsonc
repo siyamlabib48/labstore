@@ -1,0 +1,258 @@
+{
+  "name": "StudentProgress",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Id of the student this milestone belongs to"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Student display name snapshot"
+    },
+    "batch": {
+      "type": "string",
+      "description": "Id of the batch the student belongs to"
+    },
+    "lab": {
+      "type": "string",
+      "description": "Lab key the student is working in"
+    },
+    "title": {
+      "type": "string",
+      "description": "Milestone or task name, e.g. Week 3 \u2014 landing page"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "in_progress",
+        "completed"
+      ],
+      "enumColors": [
+        "gray",
+        "yellow",
+        "green"
+      ],
+      "default": "not_started",
+      "description": "How far the student has got with this milestone"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional feedback or context from the reviewer"
+    },
+    "updated_by_name": {
+      "type": "string",
+      "description": "Name of the staff member who last changed this milestone"
+    }
+  },
+  "required": [
+    "user_id",
+    "title",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "teacher"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "coordinator"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "data.lab": "{{user.data.lab}}"
+            },
+            {
+              "user_condition": {
+                "data.is_lab_leader": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "create": {
+      "$and": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "$and": [
+                {
+                  "data.batch": "{{user.data.batch}}"
+                },
+                {
+                  "user_condition": {
+                    "data.staff_role": "teacher"
+                  }
+                }
+              ]
+            },
+            {
+              "$and": [
+                {
+                  "data.batch": "{{user.data.batch}}"
+                },
+                {
+                  "user_condition": {
+                    "data.staff_role": "coordinator"
+                  }
+                }
+              ]
+            },
+            {
+              "$and": [
+                {
+                  "data.batch": "{{user.data.batch}}"
+                },
+                {
+                  "data.lab": "{{user.data.lab}}"
+                },
+                {
+                  "user_condition": {
+                    "data.is_lab_leader": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "teacher"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "coordinator"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "data.lab": "{{user.data.lab}}"
+            },
+            {
+              "user_condition": {
+                "data.is_lab_leader": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "teacher"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "coordinator"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "data.lab": "{{user.data.lab}}"
+            },
+            {
+              "user_condition": {
+                "data.is_lab_leader": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

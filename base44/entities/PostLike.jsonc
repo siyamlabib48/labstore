@@ -1,0 +1,94 @@
+{
+  "name": "PostLike",
+  "type": "object",
+  "properties": {
+    "post_id": {
+      "type": "string",
+      "description": "Id of the reacted post"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Id of the member who reacted"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "like",
+        "love",
+        "care"
+      ],
+      "enumColors": [
+        "blue",
+        "pink",
+        "yellow"
+      ],
+      "default": "like",
+      "description": "Which reaction the member left \u2014 one row per member per post"
+    }
+  },
+  "required": [
+    "post_id",
+    "user_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            },
+            {
+              "user_condition": {
+                "data.approval_status": "approved"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "create": {
+      "$and": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "data.approval_status": "approved"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "name": "Batch",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Batch display name, e.g. Freelancing Course \u2014 Batch 8"
+    },
+    "course_name": {
+      "type": "string",
+      "description": "Course this batch belongs to"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "upcoming",
+        "archived"
+      ],
+      "enumColors": [
+        "green",
+        "blue",
+        "gray"
+      ],
+      "default": "active",
+      "description": "Only active batches are shown to students"
+    },
+    "labs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lab keys that exist inside this batch, e.g. A, B, C"
+    },
+    "accent": {
+      "type": "string",
+      "description": "Accent colour hex used to tint the batch across the UI"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

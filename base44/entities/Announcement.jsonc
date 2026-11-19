@@ -1,0 +1,277 @@
+{
+  "name": "Announcement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short headline of the announcement"
+    },
+    "body": {
+      "type": "string",
+      "description": "Full announcement message"
+    },
+    "batch": {
+      "type": "string",
+      "description": "Id of the batch this announcement targets"
+    },
+    "lab": {
+      "type": "string",
+      "description": "Lab key the notice is written for; empty for the whole batch. An ACR may only write to their own lab."
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "general",
+        "homework",
+        "holiday",
+        "batch_update"
+      ],
+      "enumColors": [
+        "gray",
+        "blue",
+        "green",
+        "purple"
+      ],
+      "default": "general",
+      "description": "What kind of notice this is. Drives the notification type members receive: homework, holiday and batch_update get their own notification types, general uses the plain announcement type."
+    },
+    "event_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the announced thing happens (a homework deadline, a holiday, an event) — display only; created_date stays the posted time"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_uri": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Private files attached to the announcement, same shape as Work attachments"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "important"
+      ],
+      "enumColors": [
+        "gray",
+        "red"
+      ],
+      "default": "normal",
+      "description": "Important announcements are highlighted and marked as such in notifications"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Author display name snapshot"
+    },
+    "author_role": {
+      "type": "string",
+      "description": "Staff role key of the author at publish time"
+    }
+  },
+  "required": [
+    "title",
+    "body"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            },
+            {
+              "user_condition": {
+                "data.approval_status": "approved"
+              }
+            },
+            {
+              "data.batch": "{{user.data.batch}}"
+            }
+          ]
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "coordinator"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "teacher"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "cr"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "data.lab": "{{user.data.lab}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "acr"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "coordinator"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "teacher"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "coordinator"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "teacher"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "cr"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.batch": "{{user.data.batch}}"
+            },
+            {
+              "user_condition": {
+                "data.staff_role": "acr"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
