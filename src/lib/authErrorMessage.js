@@ -1,6 +1,6 @@
 // Turns whatever the auth API returns into one clean, human sentence. Raw API
 // text, stack traces and HTML error pages never reach the sign-in screens.
-const LOOKS_RAW = /base44error|stack|traceback|<!doctype|<html|at\s+\w+\s+\(/i;
+const LOOKS_RAW = /stack|traceback|<!doctype|<html|at\s+\w+\s+\(/i;
 
 export function authErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
   const raw = String(error?.data?.message || error?.message || '').trim();
