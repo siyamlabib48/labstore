@@ -63,14 +63,18 @@ export const svc = {
     return data;
   },
 
-  async filter(db: any, table: string, conditions: Record<string, unknown>, options: { limit?: number; sort?: string } = {}) {
+  async filter(db: any, table: string, conditions: Record<string, unknown>, options: { limit?: number; sort?: string; offset?: number } = {}) {
     let q = db.from(table).select('*');
     q = applyConditions(q, conditions);
     if (options.sort) {
       const descending = options.sort.startsWith('-');
       q = q.order(options.sort.replace(/^-/, ''), { ascending: !descending });
     }
-    if (options.limit) q = q.limit(options.limit);
+    if (options.offset !== undefined && options.limit) {
+      q = q.range(options.offset, options.offset + options.limit - 1);
+    } else if (options.limit) {
+      q = q.limit(options.limit);
+    }
     const { data, error } = await q;
     if (error) throw error;
     return data || [];
