@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Search, Target } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import useProgress from '@/hooks/useProgress';
 import LabBadge from '@/components/common/LabBadge';
 import ManageProgressDialog from '@/components/progress/ManageProgressDialog';
@@ -22,7 +22,7 @@ export default function StudentProgressList({ batch, user, labScope }) {
     let alive = true;
     (async () => {
       setMembersLoading(true);
-      const res = await base44.functions.invoke('manageMembers', {
+      const res = await db.functions.invoke('manageMembers', {
         action: 'directory',
         batch_id: batch.id,
       });

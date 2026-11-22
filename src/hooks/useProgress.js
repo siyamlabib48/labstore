@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 
 export default function useProgress({ batchId, user }) {
   const [records, setRecords] = useState([]);
@@ -12,7 +12,7 @@ export default function useProgress({ batchId, user }) {
       return;
     }
     setLoading(true);
-    const page = await base44.entities.StudentProgress.filter(
+    const page = await db.entities.StudentProgress.filter(
       { batch: batchId },
       { sort: 'created_date', limit: 500 }
     );
@@ -27,7 +27,7 @@ export default function useProgress({ batchId, user }) {
   const actor = user?.full_name || user?.email || '';
 
   const addMilestone = async (member, title) => {
-    await base44.entities.StudentProgress.create({
+    await db.entities.StudentProgress.create({
       user_id: member.id,
       user_name: member.full_name || member.email || '',
       batch: member.batch || batchId,
@@ -40,17 +40,17 @@ export default function useProgress({ batchId, user }) {
   };
 
   const setStatus = async (record, status) => {
-    await base44.entities.StudentProgress.update(record.id, { status, updated_by_name: actor });
+    await db.entities.StudentProgress.update(record.id, { status, updated_by_name: actor });
     await load();
   };
 
   const setNote = async (record, note) => {
-    await base44.entities.StudentProgress.update(record.id, { note, updated_by_name: actor });
+    await db.entities.StudentProgress.update(record.id, { note, updated_by_name: actor });
     await load();
   };
 
   const removeMilestone = async (record) => {
-    await base44.entities.StudentProgress.delete(record.id);
+    await db.entities.StudentProgress.delete(record.id);
     await load();
   };
 

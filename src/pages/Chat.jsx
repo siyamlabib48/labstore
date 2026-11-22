@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlaskConical, Loader2, MessageCircle, Users } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
 import { labOf } from '@/lib/labs';
@@ -40,7 +40,7 @@ export default function Chat() {
   // newer than the member's read marker that they did not write themselves.
   const loadUnread = useCallback(async () => {
     if (!user?.id || !activeBatch) return;
-    const page = await base44.entities.ChatReadState.filter(
+    const page = await db.entities.ChatReadState.filter(
       { user_id: user.id },
       { limit: 100 }
     ).catch(() => ({ items: [] }));
@@ -63,7 +63,7 @@ export default function Chat() {
       rooms.map(async (entry) => {
         const query = { batch: activeBatch.id, scope: entry.scope };
         if (entry.scope === 'lab') query.lab = entry.lab;
-        const messages = await base44.entities.ChatMessage.filter(query, {
+        const messages = await db.entities.ChatMessage.filter(query, {
           sort: '-created_date',
           limit: 80,
         }).catch(() => ({ items: [] }));
@@ -91,13 +91,13 @@ export default function Chat() {
       setUnread((prev) => ({ ...prev, [roomKey]: 0 }));
       try {
         if (existing?.id) {
-          await base44.entities.ChatReadState.update(existing.id, { last_read_at: atIso });
+          await db.entities.ChatReadState.update(existing.id, { last_read_at: atIso });
           readMapRef.current = {
             ...readMapRef.current,
             [roomKey]: { ...existing, last_read_at: atIso },
           };
         } else {
-          const row = await base44.entities.ChatReadState.create({
+          const row = await db.entities.ChatReadState.create({
             user_id: user.id,
             room_key: roomKey,
             last_read_at: atIso,

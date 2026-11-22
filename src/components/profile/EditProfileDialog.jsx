@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pencil, Loader2, Camera, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { supabase } from '@/api/supabaseClient';
 import { Image } from '@/components/ui/image';
 import {
@@ -75,7 +75,7 @@ export default function EditProfileDialog({ user, onSaved }) {
 
   // One shared upload path for both profile photos.
   const uploadPublic = async (file) => {
-    const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+    const { file_url } = await db.integrations.Core.UploadPublicFile({ file });
     return file_url;
   };
 

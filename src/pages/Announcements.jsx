@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Megaphone } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
 import {
@@ -45,7 +45,7 @@ export default function Announcements() {
       return;
     }
     setLoading(true);
-    const page = await base44.entities.Announcement.filter(
+    const page = await db.entities.Announcement.filter(
       { batch: activeBatch.id },
       { sort: '-created_date', limit: 30 }
     );
@@ -59,7 +59,7 @@ export default function Announcements() {
     // Read tracking: one AnnouncementRead row per member per announcement.
     // The duplicate guard is the fetched set itself (Phase 0 pattern) —
     // only announcements with no row yet get one created.
-    const myReads = await base44.entities.AnnouncementRead.filter(
+    const myReads = await db.entities.AnnouncementRead.filter(
       { user_id: user.id },
       { limit: 200 }
     ).catch(() => ({ items: [] }));
@@ -79,7 +79,7 @@ export default function Announcements() {
     if (toMark.length) {
       await Promise.allSettled(
         toMark.map((item) =>
-          base44.entities.AnnouncementRead.create({
+          db.entities.AnnouncementRead.create({
             announcement_id: item.id,
             user_id: user.id,
             batch: activeBatch.id,
@@ -94,7 +94,7 @@ export default function Announcements() {
     // an author sees the rows for their own announcements.
     const iAuthored = visible.some((item) => item.created_by_id === user.id);
     if (seesAll || iAuthored) {
-      const batchReads = await base44.entities.AnnouncementRead.filter(
+      const batchReads = await db.entities.AnnouncementRead.filter(
         { batch: activeBatch.id },
         { limit: 500 }
       ).catch(() => ({ items: [] }));
@@ -116,7 +116,7 @@ export default function Announcements() {
   }, [activeBatch?.id]);
 
   const publish = async ({ title, body, priority, category, event_at, attachments }) => {
-    const row = await base44.entities.Announcement.create({
+    const row = await db.entities.Announcement.create({
       title,
       body,
       priority,
@@ -129,13 +129,13 @@ export default function Announcements() {
       author_role: user.role === 'admin' ? 'owner' : user.staff_role || 'member',
     });
     setItems((prev) => [row, ...prev]);
-    await base44.functions
+    await db.functions
       .invoke('notify', { action: 'announcement', announcement_id: row.id })
       .catch(() => {});
   };
 
   const remove = async (id) => {
-    await base44.entities.Announcement.delete(id);
+    await db.entities.Announcement.delete(id);
     setItems((prev) => prev.filter((row) => row.id !== id));
   };
 

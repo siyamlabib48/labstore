@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ImagePlus, X, Loader2, Eye, Users, Lock, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import useMyWorks from '@/hooks/useMyWorks';
 import { WORK_TYPES } from '@/lib/workTypes';
@@ -102,7 +102,7 @@ export default function UploadWork() {
 
       // The server measures the stored bytes, checks the 500 MB quota and pins
       // the record to this member's batch and lab before it is saved.
-      const res = await base44.functions.invoke('manageWork', {
+      const res = await db.functions.invoke('manageWork', {
         action: 'create',
         title: title.trim(),
         description: description.trim(),

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DatabaseZap, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { Button } from '@/components/ui/button';
 
 // Owner-only one-shot: creates the two canonical batches and moves lab-tagged
@@ -19,7 +19,7 @@ export default function BatchSeeder({ onDone }) {
     setError('');
     setSummary('');
     try {
-      const res = await base44.functions.invoke('initBatches', {});
+      const res = await db.functions.invoke('initBatches', {});
       if (res.data?.error) throw new Error(res.data.error);
       const { users_backfilled, works_backfilled, records_backfilled, orphans_skipped } =
         res.data || {};

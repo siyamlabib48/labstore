@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ImagePlus, Loader2, Send, X, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { initials } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import VisibilityPicker from '@/components/feed/VisibilityPicker';
@@ -46,7 +46,7 @@ export default function PostComposer({ user, onCreate }) {
     try {
       let image_uri = '';
       if (image) {
-        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({
+        const { file_uri } = await db.integrations.Core.UploadPrivateFile({
           file: image.file,
         });
         image_uri = file_uri;

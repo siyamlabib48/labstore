@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useBatch } from '@/lib/BatchContext';
 import { batchLabs } from '@/lib/batches';
 import { ChevronsUpDown } from 'lucide-react';
@@ -56,8 +56,8 @@ export default function Gallery() {
     setLoading(true);
     setError('');
     Promise.all([
-      base44.entities.Work.filter(query, { sort: '-created_date', limit: PAGE_SIZE }),
-      base44.entities.Work.count(query),
+      db.entities.Work.filter(query, { sort: '-created_date', limit: PAGE_SIZE }),
+      db.entities.Work.count(query),
     ])
       .then(([page, count]) => {
         if (!alive) return;
@@ -83,7 +83,7 @@ export default function Gallery() {
     if (batchId) query.batch = batchId;
     if (lab !== 'all') query.lab = lab;
     if (type !== 'all') query.work_type = type;
-    const page = await base44.entities.Work.filter(query, {
+    const page = await db.entities.Work.filter(query, {
       sort: '-created_date',
       limit: PAGE_SIZE,
       cursor,
