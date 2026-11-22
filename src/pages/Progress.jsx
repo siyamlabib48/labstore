@@ -1,12 +1,51 @@
 import React from 'react';
-import { Loader2, Target } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Loader2, Target, Trophy } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
 import { canManageBatch } from '@/lib/staffRoles';
+import { cn } from '@/lib/utils';
 import MyProgress from '@/components/progress/MyProgress';
 import StudentProgressList from '@/components/progress/StudentProgressList';
+import Leaderboard from '@/pages/Leaderboard';
 
+// Progress and Ranks live on one page behind one nav item (they used to
+// be two sidebar entries): the tabs switch between the milestone track
+// and the leaderboard, which keeps its own Lab / Batch / Global scopes.
+// /leaderboard redirects to ?tab=ranks.
 export default function Progress() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'ranks' ? 'ranks' : 'progress';
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        {[
+          { key: 'progress', label: 'Progress', icon: Target },
+          { key: 'ranks', label: 'Ranks', icon: Trophy },
+        ].map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            onClick={() => setSearchParams(option.key === 'ranks' ? { tab: 'ranks' } : {}, { replace: true })}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all',
+              tab === option.key
+                ? 'bg-slate-900 text-white'
+                : 'border border-border/80 bg-white text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <option.icon className="h-3.5 w-3.5" />
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'ranks' ? <Leaderboard /> : <ProgressView />}
+    </div>
+  );
+}
+
+function ProgressView() {
   const { user } = useAuth();
   const { activeBatch, loading } = useBatch();
 

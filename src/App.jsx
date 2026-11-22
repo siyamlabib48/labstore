@@ -16,7 +16,6 @@ import Notifications from '@/pages/Notifications';
 import WorkDetail from '@/pages/WorkDetail';
 import UploadWork from '@/pages/UploadWork';
 
-import Leaderboard from '@/pages/Leaderboard';
 import Profile from '@/pages/Profile';
 import Friends from '@/pages/Friends';
 import Admin from '@/pages/Admin';
@@ -74,7 +73,7 @@ const AuthenticatedApp = () => {
         <Route path="/work/:id" element={<WorkDetail />} />
         <Route path="/upload" element={<UploadWork />} />
         <Route path="/my-works" element={<Navigate to="/gallery?view=mine" replace />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/leaderboard" element={<Navigate to="/progress?tab=ranks" replace />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/profile" element={<Profile />} />

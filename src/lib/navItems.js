@@ -1,4 +1,4 @@
-import { LayoutDashboard, LayoutGrid, MessagesSquare, MessageCircle, Megaphone, Upload, FolderOpen, Trophy, Target, Users, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, LayoutGrid, MessagesSquare, MessageCircle, Megaphone, Upload, FolderOpen, Trophy, Users, ShieldCheck } from 'lucide-react';
 
 export function navItems({ canManage, pending = 0 }) {
   const items = [
@@ -9,8 +9,7 @@ export function navItems({ canManage, pending = 0 }) {
     { to: '/chats', label: 'Chats', icon: MessageCircle },
     { to: '/upload', label: 'Upload', icon: Upload },
     { to: '/gallery?view=mine', label: 'My works', icon: FolderOpen },
-    { to: '/progress', label: 'Progress', icon: Target },
-    { to: '/leaderboard', label: 'Ranks', icon: Trophy },
+    { to: '/progress', label: 'Progress & Ranks', icon: Trophy },
     { to: '/friends', label: 'Friends', icon: Users, badge: pending },
   ];
   if (canManage) items.push({ to: '/admin', label: 'Manage', icon: ShieldCheck });
