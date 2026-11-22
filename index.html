@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D4ED8'/%3E%3Ctext x='32' y='44' font-family='Arial, sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="description" content="Labstore is the shared project cloud for every lab — upload your work, share it with your group or everyone, and climb the leaderboard." />
@@ -10,80 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Labstore — Project Cloud</title>
-    <script type="module" crossorigin src="/labstore/assets/index-BKc9vSBE.js"></script>
-    <link rel="stylesheet" crossorigin href="/labstore/assets/index-DP2zEyJL.css">
-    <script type="module">
-if (window.self === window.top) {
-  let lastPath = "";
-  // The visitor's analytics_storage choice from window.__b44Consent; null until one is known.
-  let consentGranted = null;
-  function getPageNameFromPath(path) {
-    const segments = path.split("/").filter(Boolean);
-    return segments[0] || null;
-  }
-  // Same rules as @base44/sdk analytics. Read on every send: the server sets the meta.
-  function analyticsMode() {
-    const meta = document.querySelector('meta[name="base44-analytics"]');
-    return meta ? meta.getAttribute("content") : null;
-  }
-  function deniedBefore() {
-    try {
-      return window.localStorage.getItem("base44_analytics_denied") === "1";
-    } catch (e) {
-      return false;
-    }
-  }
-  function mayTrack() {
-    const mode = analyticsMode();
-    if (mode === "off") return false;
-    if (mode === "consent") return consentGranted === true;
-    if (mode === "on") return consentGranted === null ? !deniedBefore() : consentGranted;
-    return true;
-  }
-  function trackPageView() {
-    if (!mayTrack()) return;
-    const path = window.location.pathname;
-    if (path === lastPath) return;
-    lastPath = path;
-    const pageName = getPageNameFromPath(path) || "home";
-    const appId = "6afa80918e569c742ce042b1";
-    if (!appId) return;
-    fetch(`/api/app-logs/${appId}/log-user-in-app/${pageName}`, {
-      method: "POST",
-    }).catch(() => {});
-  }
-  const originalPushState = history.pushState.bind(history);
-  history.pushState = function (...args) {
-    originalPushState(...args);
-    trackPageView();
-  };
-  const originalReplaceState = history.replaceState.bind(history);
-  history.replaceState = function (...args) {
-    originalReplaceState(...args);
-    trackPageView();
-  };
-  window.addEventListener("popstate", trackPageView);
-  // A module script runs after the head's classic scripts, so the listener exists by now.
-  // Without it, "consent" never sends and "on" relies on the saved Decline only.
-  try {
-    if (window.__b44Consent) {
-      window.__b44Consent.on(
-        "analytics_storage",
-        function () {
-          consentGranted = true;
-          trackPageView();
-        },
-        function () {
-          consentGranted = false;
-          // A later grant sends the page the visitor is on, even one they saw before.
-          lastPath = "";
-        }
-      );
-    }
-  } catch (e) {}
-  trackPageView();
-}
-</script>
+    <script type="module" crossorigin src="/labstore/assets/index-CjKeM5o_.js"></script>
+    <link rel="stylesheet" crossorigin href="/labstore/assets/index-DfrQ9BBG.css">
   </head>
   <body>
     <div id="root"></div>
