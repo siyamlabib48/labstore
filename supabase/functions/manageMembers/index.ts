@@ -11,7 +11,7 @@ import {
   sameBatch,
 } from '../_shared/access.ts';
 
-const STAFF_ROLES = ['coordinator', 'teacher', 'cr', 'acr', 'member'];
+const STAFF_ROLES = ['coordinator', 'dedicated_teacher', 'teacher', 'cr', 'acr', 'member'];
 const APPROVAL_STATES = ['pending', 'approved', 'rejected'];
 
 const safeMember = (u: any) => ({
@@ -21,7 +21,6 @@ const safeMember = (u: any) => ({
   lab: u.lab || '',
   batch: u.batch || '',
   staff_role: u.staff_role || 'member',
-  is_lab_leader: !!u.is_lab_leader,
   approval_status: u.approval_status || 'pending',
   created_date: u.created_at,
 });
@@ -63,9 +62,10 @@ async function handler(req: Request) {
       return all;
     };
 
-    // Emails are personal data: only the people who manage the batch see them.
-    // Everyone else in the batch gets the roster without contact details.
-    const canSeeEmails = owner || staffManager || !!caller.is_lab_leader;
+    // Emails are personal data: only the people who manage the batch see
+    // them, plus the lab's CR/ACR who lead it. Everyone else in the batch
+    // gets the roster without contact details.
+    const canSeeEmails = owner || staffManager || ['cr', 'acr'].includes(caller.staff_role);
 
     if (action === 'directory') {
       const batchId = String(body.batch_id || '');
@@ -158,40 +158,19 @@ async function handler(req: Request) {
       if (target.role === 'admin') return Response.json({ error: 'Owner cannot be removed' }, { status: 400 });
       if (!owner) {
         // Removal is a coordinator decision inside their own batch. Teachers,
-        // CRs, ACRs and lab leaders are denied.
+        // CRs and ACRs are denied.
         if (!canCoordinate(caller)) return forbidden();
         if (!sameBatch(caller, target.batch)) return forbidden();
         // A coordinator cannot remove another batch's staff.
-        if (['coordinator', 'teacher'].includes(target.staff_role)) return forbidden();
+        if (['coordinator', 'teacher', 'dedicated_teacher'].includes(target.staff_role)) return forbidden();
       }
 
       await svc.update(db, 'profiles', target.id, {
         batch: null,
         lab: '',
-        is_lab_leader: false,
         staff_role: 'member',
         approval_status: 'pending',
       });
-      return Response.json({ ok: true });
-    }
-
-    if (action === 'setLeader') {
-      const target = await loadTarget(String(body.user_id || ''));
-      if (!target) return Response.json({ error: 'Member not found' }, { status: 404 });
-      const allowed = owner || (canCoordinate(caller) && sameBatch(caller, target.batch));
-      if (!allowed) return forbidden();
-      if (target.role === 'admin') return forbidden();
-      if (!target.lab) return Response.json({ error: 'Assign a lab first' }, { status: 400 });
-
-      const makeLeader = !!body.is_leader;
-      if (makeLeader) {
-        const mates = await listUsers({ batch: target.batch, lab: target.lab });
-        const previous = (mates || []).filter((u: any) => u.id !== target.id && u.is_lab_leader);
-        if (previous.length) {
-          await svc.bulkUpdate(db, 'profiles', previous.map((u: any) => u.id), { is_lab_leader: false });
-        }
-      }
-      await svc.update(db, 'profiles', target.id, { is_lab_leader: makeLeader });
       return Response.json({ ok: true });
     }
 

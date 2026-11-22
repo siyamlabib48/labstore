@@ -81,7 +81,6 @@ async function handler(req: Request) {
         lab: u.lab || '',
         batch: u.batch || '',
         staff_role: u.staff_role || 'member',
-        is_lab_leader: !!u.is_lab_leader,
         work_count: counts.get(u.id) || 0,
       }))
       .sort((a: any, b: any) => b.work_count - a.work_count || a.full_name.localeCompare(b.full_name))

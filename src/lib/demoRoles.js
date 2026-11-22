@@ -18,7 +18,6 @@ const base = {
   is_admin: false,
   approval_status: 'approved',
   staff_role: 'member',
-  is_lab_leader: false,
   batch: DEMO_BATCH,
   lab: 'A',
 };
@@ -30,10 +29,10 @@ export const DEMO_ROLES = [
     user: { role: 'admin', is_admin: true, staff_role: 'owner', batch: null, lab: null },
   },
   { key: 'coordinator', label: 'Coordinator', user: { staff_role: 'coordinator', lab: null } },
+  { key: 'dedicated_teacher', label: 'Dedicated Teacher', user: { staff_role: 'dedicated_teacher' } },
   { key: 'teacher', label: 'Teacher', user: { staff_role: 'teacher' } },
   { key: 'cr', label: 'CR', user: { staff_role: 'cr' } },
   { key: 'acr', label: 'ACR', user: { staff_role: 'acr' } },
-  { key: 'lab_leader', label: 'Lab Leader', user: { staff_role: 'member', is_lab_leader: true } },
   { key: 'student', label: 'Student', user: { staff_role: 'member' } },
   {
     key: 'pending',

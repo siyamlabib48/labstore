@@ -17,8 +17,10 @@ export default function FriendApprovalsQueue({ me }) {
   const [reasons, setReasons] = useState({});
 
   const isOwner = me?.role === 'admin';
+  // Deciders mirror the server rule: the owner, the batch coordinator, or
+  // the dedicated teacher of the requester's lab.
   const canDecide =
-    !!me && (isOwner || me.staff_role === 'teacher' || me.staff_role === 'coordinator');
+    !!me && (isOwner || me.staff_role === 'dedicated_teacher' || me.staff_role === 'coordinator');
   const myId = me?.id;
   const myBatch = me?.batch;
   const myLab = me?.lab;
@@ -36,7 +38,7 @@ export default function FriendApprovalsQueue({ me }) {
     const inScope = (row) => {
       if (isOwner) return true;
       if (myRole === 'coordinator') return !!myBatch && row.batch === myBatch;
-      if (myRole === 'teacher') {
+      if (myRole === 'dedicated_teacher') {
         return !!myBatch && row.batch === myBatch && !!myLab && row.lab === myLab;
       }
       return false;

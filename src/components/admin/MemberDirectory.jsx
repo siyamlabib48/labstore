@@ -9,10 +9,8 @@ export default function MemberDirectory({
   batch,
   isOwner,
   canRemove,
-  canSetLeader,
   onChangeLab,
   onChangeRole,
-  onToggleLeader,
   onRemove,
   busyId,
 }) {
@@ -43,7 +41,7 @@ export default function MemberDirectory({
     if (roleFilter === 'staff' && (!member.staff_role || member.staff_role === 'member')) {
       return false;
     }
-    if (roleFilter === 'leader' && !member.is_lab_leader) {
+    if (roleFilter === 'leader' && !['cr', 'acr'].includes(member.staff_role)) {
       return false;
     }
     return true;
@@ -106,10 +104,8 @@ export default function MemberDirectory({
                     labs={labs}
                     isOwner={isOwner}
                     canRemove={canRemove}
-                    canSetLeader={canSetLeader}
                     onChangeLab={onChangeLab}
                     onChangeRole={onChangeRole}
-                    onToggleLeader={onToggleLeader}
                     onRemove={onRemove}
                     busyId={busyId}
                   />

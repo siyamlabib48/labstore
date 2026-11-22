@@ -50,8 +50,9 @@ function ProgressView() {
   const { activeBatch, loading } = useBatch();
 
   const staff = canManageBatch(user);
-  const leaderOnly = !staff && !!user?.is_lab_leader;
-  const canTrack = staff || leaderOnly;
+  // A CR/ACR leads their own lab: they track progress for that lab only.
+  const repOnly = !staff && ['cr', 'acr'].includes(user?.staff_role);
+  const canTrack = staff || repOnly;
 
   return (
     <div className="space-y-5">
@@ -86,7 +87,7 @@ function ProgressView() {
           <StudentProgressList
             batch={activeBatch}
             user={user}
-            labScope={leaderOnly ? user.lab || '' : ''}
+            labScope={repOnly ? user.lab || '' : ''}
           />
         ) : (
           <MyProgress batch={activeBatch} user={user} />

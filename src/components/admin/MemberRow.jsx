@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, X, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { ASSIGNABLE_ROLES, roleOf, staffRoleOf } from '@/lib/staffRoles';
 import { labOf } from '@/lib/labs';
 import { initials } from '@/lib/format';
@@ -10,14 +10,11 @@ export default function MemberRow({
   labs,
   isOwner,
   canRemove,
-  canSetLeader,
   onChangeLab,
   onChangeRole,
-  onToggleLeader,
   onRemove,
   busyId,
 }) {
-  // A lab leader reads as its own role, not as a plain student.
   const role = roleOf(member);
   const isBusy = busyId === member.id;
 
@@ -29,11 +26,6 @@ export default function MemberRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-semibold">
           {member.full_name || member.email}
-          {member.is_lab_leader && (
-            <span className="ml-1.5 rounded-full bg-[#FEF3C7] px-1.5 py-0.5 text-[9px] font-bold text-[#B45309]">
-              Lab leader
-            </span>
-          )}
         </p>
         <p className="truncate text-[10px] text-muted-foreground">{member.email}</p>
       </div>
@@ -67,23 +59,6 @@ export default function MemberRow({
           </option>
         ))}
       </select>
-
-      {canSetLeader && (
-        <button
-          type="button"
-          onClick={() => onToggleLeader(member)}
-          disabled={isBusy}
-          title={member.is_lab_leader ? 'Remove lab leader' : 'Make lab leader'}
-          className={cn(
-            'rounded-lg p-1.5 transition-colors',
-            member.is_lab_leader
-              ? 'bg-[#FEF3C7] text-[#B45309]'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-          )}
-        >
-          <Crown className="h-3.5 w-3.5" />
-        </button>
-      )}
 
       {canRemove && (
         <button

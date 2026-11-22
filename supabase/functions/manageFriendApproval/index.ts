@@ -12,8 +12,9 @@ const clip = (text: unknown, max: number) => String(text || '').slice(0, max);
 // Friend requests between students of different (or unknown) gender are held
 // for staff approval — always on, no toggle. This function is the gate: it
 // either creates the pending Friendship directly or files a
-// FriendApprovalRequest for the requester's lab teacher / batch coordinator
-// to decide. The decide action then creates the Friendship on approval.
+// FriendApprovalRequest for the requester's lab dedicated teacher / batch
+// coordinator to decide. The decide action then creates the Friendship on
+// approval.
 async function handler(req: Request) {
   try {
     const db = serviceClient();
@@ -108,13 +109,14 @@ async function handler(req: Request) {
         created_by_id: me.id,
       });
 
-      // Approvers: the requester's lab teachers plus the batch coordinators.
-      // If the batch has neither yet, owners are notified instead, so a held
-      // request can never get stuck with nobody able to decide it.
+      // Approvers: the requester's lab dedicated teacher (the lab's main
+      // teacher) plus the batch coordinators. If the batch has neither
+      // yet, owners are notified instead, so a held request can never get
+      // stuck with nobody able to decide it.
       let approvers: any[] = [];
       if (me.batch) {
         const [teachers, coordinators] = await Promise.all([
-          svc.filter(db, 'profiles', { batch: me.batch, lab: me.lab || '', staff_role: 'teacher' }),
+          svc.filter(db, 'profiles', { batch: me.batch, lab: me.lab || '', staff_role: 'dedicated_teacher' }),
           svc.filter(db, 'profiles', { batch: me.batch, staff_role: 'coordinator' }),
         ]);
         approvers = [...teachers, ...coordinators].filter(

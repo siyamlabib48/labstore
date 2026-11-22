@@ -108,7 +108,6 @@ async function handler(req: Request) {
       cover_photo: target.cover_photo || '',
       lab: target.lab || '',
       staff_role: target.staff_role || 'member',
-      is_lab_leader: !!target.is_lab_leader,
       batch: target.batch || '',
       batch_name: batch?.name || '',
       joined_date: target.created_at || '',

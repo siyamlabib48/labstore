@@ -7,7 +7,6 @@ import {
   canEditBatches,
   canManageBatch,
   canRemoveMembers,
-  canSetLabLeader,
   isOwner as isOwnerOf,
   removeNeedsOverride,
 } from '@/lib/staffRoles';
@@ -28,7 +27,6 @@ export default function Admin() {
   const canBatches = canEditBatches(user);
   const canManage = canManageBatch(user);
   const removable = canRemoveMembers(user);
-  const canLead = canSetLabLeader(user);
 
   const scope = owner ? batches.filter((item) => item.status !== 'archived') : available;
   const [batchId, setBatchId] = useState('');
@@ -187,9 +185,6 @@ export default function Admin() {
   const changeRole = (member, staff_role) =>
     act(member.id, { action: 'assign', user_id: member.id, batch_id: batch.id, lab: member.lab, staff_role });
 
-  const toggleLeader = (member) =>
-    act(member.id, { action: 'setLeader', user_id: member.id, is_leader: !member.is_lab_leader });
-
   const removeMember = (member) => act(member.id, { action: 'remove', user_id: member.id });
 
   // The owner may remove anyone, but that is an override and is confirmed first.
@@ -255,7 +250,7 @@ export default function Admin() {
           Batches & members
         </h1>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Create batches, approve sign-ups, assign labs and pick one lab leader per lab.
+          Create batches, approve sign-ups, assign labs and set roles — each lab runs under its dedicated teacher, with a CR and ACR leading the students.
         </p>
       </div>
 
@@ -329,10 +324,8 @@ export default function Admin() {
             batch={batch}
             isOwner={owner}
             canRemove={removable}
-            canSetLeader={canLead}
             onChangeLab={changeLab}
             onChangeRole={changeRole}
-            onToggleLeader={toggleLeader}
             onRemove={requestRemove}
             busyId={busyId}
           />

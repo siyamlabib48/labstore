@@ -76,11 +76,6 @@ export default function ProfileHeader({ profile, isMe, actions }) {
               <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', role.chip)}>
                 {role.label}
               </span>
-              {profile.is_lab_leader && (
-                <span className="rounded-full bg-[#FEF3C7] px-2 py-0.5 text-[10px] font-bold text-[#B45309]">
-                  Lab leader
-                </span>
-              )}
               {profile.batch_name && (
                 <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                   {profile.batch_name}

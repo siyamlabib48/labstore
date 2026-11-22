@@ -4,7 +4,10 @@
 // from the previous backend: callers pass the caller's profile row mapped
 // to the app-user shape (role derived from is_admin).
 
-export const MANAGER_ROLES = ['coordinator', 'teacher'];
+// Teachers come in two types — the dedicated teacher a lab runs under
+// and class teachers — and both manage like teachers always have. There
+// is no lab-leader role: the CR and ACR of a lab are its leaders.
+export const MANAGER_ROLES = ['coordinator', 'teacher', 'dedicated_teacher'];
 
 export const isOwner = (user) => user?.role === 'admin';
 
@@ -42,9 +45,9 @@ export const canApproveSignups = (user) => canCoordinate(user);
 
 // Friend requests between students are held for staff approval first (always
 // on, no toggle). Staff are exempt — the safeguard exists for students only,
-// and CR, ACR or lab-leader flags do not exempt a student.
+// and being a CR or ACR does not exempt a student.
 export const isFriendApprovalStaff = (user) =>
-  isOwner(user) || ['owner', 'teacher', 'coordinator'].includes(user?.staff_role);
+  isOwner(user) || ['owner', 'teacher', 'dedicated_teacher', 'coordinator'].includes(user?.staff_role);
 
 // Approval is needed only when both sides are students and their genders
 // differ — or either gender is unknown, in which case a match cannot be
@@ -57,19 +60,20 @@ export const friendApprovalNeeded = (requester, recipient) => {
 };
 
 // Who decides a held request: the owner anywhere, the coordinator of the
-// requester's batch, or a teacher of the requester's lab in that batch.
+// requester's batch, or the dedicated teacher of the requester's lab in
+// that batch (the lab's main teacher — class teachers do not decide).
 export const canDecideFriendApproval = (user, approval) => {
   if (!user || !approval) return false;
   if (isOwner(user)) return true;
   if (!sameBatch(user, approval.batch)) return false;
   if (user.staff_role === 'coordinator') return true;
-  return user.staff_role === 'teacher' && !!user.lab && !!approval.lab && user.lab === approval.lab;
+  return user.staff_role === 'dedicated_teacher' && !!user.lab && !!approval.lab && user.lab === approval.lab;
 };
 
 export const canChangeRoles = (user) => isOwner(user);
 
 // Placing a member in a lab: owner anywhere, teacher/coordinator inside their
-// own batch only. Lab leaders, CRs and ACRs cannot manage members.
+// own batch only. CRs and ACRs cannot manage members.
 export const canPlaceMembers = (user) => canManageBatch(user);
 
 // Removing a member is stricter: only a coordinator for their own batch, or the
@@ -77,13 +81,13 @@ export const canPlaceMembers = (user) => canManageBatch(user);
 export const canRemoveMembers = (user) => canCoordinate(user);
 
 // Academic oversight of a work: owner anywhere, staff inside the work's batch,
-// lab leader for their own lab.
+// or the work's lab CR/ACR for their own lab.
 export const canReviewWork = (user, work) => {
   if (!user || !work) return false;
   if (isOwner(user)) return true;
   if (!sameBatch(user, work.batch)) return false;
   if (canManageBatch(user)) return true;
-  return !!user.is_lab_leader && !!user.lab && user.lab === work.lab;
+  return ['cr', 'acr'].includes(user.staff_role) && !!user.lab && user.lab === work.lab;
 };
 
 export const canDeleteWork = (user, work) => {

@@ -6,6 +6,12 @@ export const STAFF_ROLES = {
     short: 'Coordinator',
     chip: 'bg-[#1D4ED8]/10 text-[#1D4ED8]',
   },
+  dedicated_teacher: {
+    key: 'dedicated_teacher',
+    label: 'Dedicated Teacher',
+    short: 'Dedicated Teacher',
+    chip: 'bg-[#065F46]/15 text-[#065F46]',
+  },
   teacher: { key: 'teacher', label: 'Teacher', short: 'Teacher', chip: 'bg-[#047857]/10 text-[#047857]' },
   cr: {
     key: 'cr',
@@ -19,38 +25,32 @@ export const STAFF_ROLES = {
     short: 'ACR',
     chip: 'bg-[#BE185D]/10 text-[#BE185D]',
   },
-  lab_leader: {
-    key: 'lab_leader',
-    label: 'Lab Leader',
-    short: 'Lab Leader',
-    chip: 'bg-[#B45309]/10 text-[#B45309]',
-  },
   member: { key: 'member', label: 'Student', short: 'Student', chip: 'bg-muted text-muted-foreground' },
 };
 
-// These are the staff_role values the owner can set. Lab Leader is a flag on the
-// member (set per lab), so it is read through roleKeyOf, not written here.
-export const ASSIGNABLE_ROLES = ['coordinator', 'teacher', 'cr', 'acr', 'member'];
+// These are the staff_role values the owner can set. There is no separate
+// lab-leader role: the CR and ACR of a lab ARE its leaders, and teachers
+// come in two types — the dedicated teacher a lab runs under, and class
+// teachers.
+export const ASSIGNABLE_ROLES = ['coordinator', 'dedicated_teacher', 'teacher', 'cr', 'acr', 'member'];
 
 export const staffRoleOf = (key) => STAFF_ROLES[key] || STAFF_ROLES.member;
 
 export const isOwner = (user) => user?.role === 'admin';
 
-export const isLabLeader = (user) => !!user?.is_lab_leader;
+// The CR and ACR lead their lab on the student side.
+export const isLabRep = (user) => ['cr', 'acr'].includes(user?.staff_role);
 
 // The single effective role of a member, used for display and capability checks.
-// A lab leader is a first-class role everywhere the app shows or filters roles.
 export const roleKeyOf = (user) => {
   if (isOwner(user)) return 'owner';
-  const staffRole = user?.staff_role || 'member';
-  if (staffRole === 'member' && isLabLeader(user)) return 'lab_leader';
-  return staffRole;
+  return user?.staff_role || 'member';
 };
 
 export const roleOf = (user) => staffRoleOf(roleKeyOf(user));
 
 export const isStaffManager = (user) =>
-  !isOwner(user) && ['coordinator', 'teacher'].includes(user?.staff_role);
+  !isOwner(user) && ['coordinator', 'teacher', 'dedicated_teacher'].includes(user?.staff_role);
 
 export const canManageBatch = (user) => isOwner(user) || isStaffManager(user);
 
@@ -68,10 +68,6 @@ export const canRemoveMembers = (user) =>
 
 // The owner removing a member is an override and is confirmed as such.
 export const removeNeedsOverride = (user) => isOwner(user);
-
-// Only the owner and batch coordinators may appoint a lab leader.
-export const canSetLabLeader = (user) =>
-  isOwner(user) || user?.staff_role === 'coordinator';
 
 // Only the owner may change another member's staff role.
 export const canChangeRoles = (user) => isOwner(user);
@@ -96,17 +92,17 @@ export const canDeleteAnnouncement = (user, item) => {
 export const canApproveSignups = (user) => isOwner(user) || user?.staff_role === 'coordinator';
 
 // Reviewing a work follows the same rules the Work entity enforces: owner/staff
-// inside the work's batch, or the lab leader of that lab.
+// inside the work's batch, or the work's lab CR/ACR.
 export const canReviewWork = (user, work) => {
   if (!user || !work) return false;
   if (isOwner(user)) return true;
   if (!work.batch || user.batch !== work.batch) return false;
   if (isStaffManager(user)) return true;
-  return !!user.is_lab_leader && !!user.lab && user.lab === work.lab;
+  return isLabRep(user) && !!user.lab && user.lab === work.lab;
 };
 
-// Progress tracking is a staff + lab-leader capability.
-export const canTrackProgress = (user) => canManageBatch(user) || !!user?.is_lab_leader;
+// Progress tracking is a staff capability; a CR/ACR tracks their own lab.
+export const canTrackProgress = (user) => canManageBatch(user) || isLabRep(user);
 
 // Member emails are only exposed to the people managing that batch.
 export const canViewMemberEmails = (user) => canTrackProgress(user);

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 const ROLES = [
   { key: 'all', label: 'Everyone' },
   { key: 'staff', label: 'Staff only' },
-  { key: 'leader', label: 'Lab leaders' },
+  { key: 'leader', label: 'CR & ACR' },
 ];
 
 export default function DirectoryFilters({

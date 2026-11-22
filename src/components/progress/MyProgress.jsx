@@ -51,7 +51,7 @@ export default function MyProgress({ batch, user }) {
           <Target className="mx-auto h-7 w-7 text-muted-foreground" />
           <h3 className="mt-3 font-heading text-lg font-bold tracking-tight">Your track starts soon</h3>
           <p className="mx-auto mt-1.5 max-w-xs text-sm text-muted-foreground">
-            Your teacher or lab leader will add milestones here, and this page fills up as you finish them.
+            Your teachers or your lab's CR/ACR will add milestones here, and this page fills up as you finish them.
           </p>
         </div>
       ) : (

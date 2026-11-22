@@ -47,11 +47,6 @@ export default function LeaderboardRow({ row, rank, isMe, showLab = true, accent
         </p>
         <div className="mt-0.5 flex items-center gap-1.5">
           {showLab && row.lab && <LabBadge lab={row.lab} className="px-2 py-0.5 text-[10px]" />}
-          {row.is_lab_leader && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-              Leader
-            </span>
-          )}
         </div>
       </div>
 
