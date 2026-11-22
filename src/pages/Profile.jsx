@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Loader2, UserX } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import FriendButton from '@/components/profile/FriendButton';
@@ -35,8 +35,8 @@ export default function Profile() {
     const ids = rows.map((row) => row.id);
     if (ids.length === 0) return;
     const [likePage, commentPage] = await Promise.all([
-      base44.entities.PostLike.filter({ post_id: { $in: ids } }, { limit: 500 }),
-      base44.entities.PostComment.filter({ post_id: { $in: ids } }, { limit: 500 }),
+      db.entities.PostLike.filter({ post_id: { $in: ids } }, { limit: 500 }),
+      db.entities.PostComment.filter({ post_id: { $in: ids } }, { limit: 500 }),
     ]);
     const counts = {};
     ids.forEach((id) => {
@@ -55,7 +55,7 @@ export default function Profile() {
     if (!targetId) return;
     setError('');
     try {
-      const res = await base44.functions.invoke('getProfile', { user_id: targetId });
+      const res = await db.functions.invoke('getProfile', { user_id: targetId });
       if (res.data?.error || !res.data?.profile) {
         setMissing(true);
         setLoading(false);
@@ -63,7 +63,7 @@ export default function Profile() {
       }
       setProfile(res.data.profile);
 
-      const page = await base44.entities.Work.filter(
+      const page = await db.entities.Work.filter(
         { created_by_id: targetId },
         { sort: '-created_date', limit: 6 }
       );
@@ -73,7 +73,7 @@ export default function Profile() {
       // the owner gets every post including private ones, a visitor only the
       // posts they could already see on the feed.
       try {
-        const postPage = await base44.entities.Post.filter(
+        const postPage = await db.entities.Post.filter(
           { created_by_id: targetId },
           { sort: '-created_date', limit: POSTS_PAGE_SIZE }
         );
@@ -96,7 +96,7 @@ export default function Profile() {
     if (!postsCursor || loadingMorePosts) return;
     setLoadingMorePosts(true);
     try {
-      const postPage = await base44.entities.Post.filter(
+      const postPage = await db.entities.Post.filter(
         { created_by_id: targetId },
         { sort: '-created_date', limit: POSTS_PAGE_SIZE, cursor: postsCursor }
       );

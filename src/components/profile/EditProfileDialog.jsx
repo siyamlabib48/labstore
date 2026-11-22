@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pencil, Loader2, Camera, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
+import { supabase } from '@/api/supabaseClient';
 import { Image } from '@/components/ui/image';
 import {
   Dialog,
@@ -74,7 +75,7 @@ export default function EditProfileDialog({ user, onSaved }) {
 
   // One shared upload path for both profile photos.
   const uploadPublic = async (file) => {
-    const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+    const { file_url } = await db.integrations.Core.UploadPublicFile({ file });
     return file_url;
   };
 
@@ -128,7 +129,7 @@ export default function EditProfileDialog({ user, onSaved }) {
         previous_institution_privacy: form.previous_institution_privacy,
         marital_status_privacy: form.marital_status_privacy,
       };
-      // full_name rides the same updateMe call as every other field; only a
+      // full_name rides the same profile update as every other field; only a
       // non-empty name is sent, so the field can never be blanked by accident.
       if (form.full_name.trim()) patch.full_name = form.full_name.trim();
       // Gender and marital status are enums on the User entity — only send a
@@ -137,7 +138,13 @@ export default function EditProfileDialog({ user, onSaved }) {
       if (form.marital_status === 'single' || form.marital_status === 'married') {
         patch.marital_status = form.marital_status;
       }
-      await base44.auth.updateMe(patch);
+      // Profile fields live on the member's own profiles row; RLS and the
+      // staff-field guard keep role/placement fields out of this update.
+      const { error: saveError } = await supabase
+        .from('profiles')
+        .update(patch)
+        .eq('id', user.id);
+      if (saveError) throw saveError;
       await onSaved();
       setOpen(false);
     } catch (err) {

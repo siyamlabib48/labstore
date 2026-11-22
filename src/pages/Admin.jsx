@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
 import {
@@ -47,7 +47,7 @@ export default function Admin() {
   const [removeTarget, setRemoveTarget] = useState(null);
 
   const call = async (payload) => {
-    const res = await base44.functions.invoke('manageMembers', payload);
+    const res = await db.functions.invoke('manageMembers', payload);
     if (res.data?.error) throw new Error(res.data.error);
     return res.data;
   };
@@ -85,7 +85,7 @@ export default function Admin() {
       return;
     }
     try {
-      const page = await base44.entities.Report.filter(
+      const page = await db.entities.Report.filter(
         { batch: id, status: 'pending' },
         { sort: '-created_date', limit: 100 }
       );
@@ -99,7 +99,7 @@ export default function Admin() {
     setReportBusyId(report.id);
     setError('');
     try {
-      await base44.entities.Report.update(report.id, { status: 'dismissed' });
+      await db.entities.Report.update(report.id, { status: 'dismissed' });
       await loadReports(batch?.id);
     } catch (err) {
       setError(err.message);
@@ -112,11 +112,11 @@ export default function Admin() {
     setError('');
     try {
       if (report.target_type === 'post') {
-        await base44.entities.Post.delete(report.target_id);
+        await db.entities.Post.delete(report.target_id);
       } else {
-        await base44.entities.PostComment.delete(report.target_id);
+        await db.entities.PostComment.delete(report.target_id);
       }
-      await base44.entities.Report.update(report.id, { status: 'actioned' });
+      await db.entities.Report.update(report.id, { status: 'actioned' });
       await loadReports(batch?.id);
     } catch (err) {
       setError(err.message);
@@ -202,14 +202,14 @@ export default function Admin() {
 
   const createBatch = async (payload) => {
     setBatchBusy('create');
-    await base44.entities.Batch.create(payload);
+    await db.entities.Batch.create(payload);
     await refresh();
     setBatchBusy(null);
   };
 
   const updateBatch = async (id, patch) => {
     setBatchBusy(id);
-    await base44.entities.Batch.update(id, patch);
+    await db.entities.Batch.update(id, patch);
     await refresh();
     setBatchBusy(null);
   };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Flag, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,7 @@ export default function ReportButton({ targetType, targetId, batch, userId, vari
     if (busy) return;
     setBusy(true);
     try {
-      const existing = await base44.entities.Report.filter(
+      const existing = await db.entities.Report.filter(
         { target_type: targetType, target_id: targetId, status: 'pending' },
         { limit: 50 }
       );
@@ -41,7 +41,7 @@ export default function ReportButton({ targetType, targetId, batch, userId, vari
           description: 'You have already flagged this — the batch staff will take a look.',
         });
       } else {
-        await base44.entities.Report.create({
+        await db.entities.Report.create({
           target_type: targetType,
           target_id: targetId,
           batch: batch || '',

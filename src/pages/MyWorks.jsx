@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Eye, Users, Lock, Trash2, ArrowUpRight } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import useMyWorks, { notifyWorksChanged } from '@/hooks/useMyWorks';
 import PrivateImage from '@/components/common/PrivateImage';
@@ -19,7 +19,7 @@ export default function MyWorks() {
 
   const remove = async (work) => {
     if (!window.confirm(`Delete "${work.title}"? This frees ${formatBytes(work.file_size_bytes)}.`)) return;
-    await base44.functions.invoke('manageWork', { action: 'delete', work_id: work.id });
+    await db.functions.invoke('manageWork', { action: 'delete', work_id: work.id });
     notifyWorksChanged();
     reload();
   };

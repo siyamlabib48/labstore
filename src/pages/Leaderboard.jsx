@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
 import LeaderboardRow from '@/components/leaderboard/LeaderboardRow';
@@ -38,7 +38,7 @@ export default function Leaderboard() {
     setError('');
     const payload =
       tab === 'all' ? {} : tab === 'lab' ? { batch_id: batchId, lab: labSel } : { batch_id: batchId };
-    base44.functions
+    db.functions
       .invoke('getLeaderboard', payload)
       .then((res) => {
         if (!alive) return;

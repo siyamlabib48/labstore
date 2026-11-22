@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 
 const NOTIFY_EVENT = 'lablink:notifications-changed';
@@ -16,7 +16,7 @@ export function useUnreadCount() {
     if (!user?.id) return undefined;
     let alive = true;
     const load = () => {
-      base44.entities.Notification.count({ user_id: user.id, is_read: false }).then((value) => {
+      db.entities.Notification.count({ user_id: user.id, is_read: false }).then((value) => {
         if (alive) setCount(value || 0);
       });
     };
@@ -41,7 +41,7 @@ export function useNotifications() {
       setLoading(false);
       return;
     }
-    const page = await base44.entities.Notification.filter(
+    const page = await db.entities.Notification.filter(
       { user_id: user.id },
       { sort: '-created_date', limit: 50 }
     );
@@ -54,13 +54,13 @@ export function useNotifications() {
   }, [reload]);
 
   const markRead = async (id) => {
-    await base44.entities.Notification.update(id, { is_read: true });
+    await db.entities.Notification.update(id, { is_read: true });
     setItems((prev) => prev.map((row) => (row.id === id ? { ...row, is_read: true } : row)));
     notifyNotificationsChanged();
   };
 
   const markAllRead = async () => {
-    await base44.entities.Notification.updateMany(
+    await db.entities.Notification.updateMany(
       { user_id: user.id, is_read: false },
       { $set: { is_read: true } }
     );
@@ -69,7 +69,7 @@ export function useNotifications() {
   };
 
   const remove = async (id) => {
-    await base44.entities.Notification.delete(id);
+    await db.entities.Notification.delete(id);
     setItems((prev) => prev.filter((row) => row.id !== id));
     notifyNotificationsChanged();
   };

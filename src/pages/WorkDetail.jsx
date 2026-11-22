@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Eye, Users, Lock, Trash2, HardDrive, Check } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { notifyWorksChanged } from '@/hooks/useMyWorks';
 import PrivateImage from '@/components/common/PrivateImage';
@@ -37,7 +37,7 @@ export default function WorkDetail() {
     let alive = true;
     setLoading(true);
     setMissing(false);
-    base44.entities.Work.get(id)
+    db.entities.Work.get(id)
       .then((record) => {
         if (!alive) return;
         setWork(record);
@@ -99,7 +99,7 @@ export default function WorkDetail() {
     if (!window.confirm('Delete this work? Its files are removed and your storage frees up.')) return;
     // Deletion goes through the managed path so quota and permissions are
     // re-checked on the server.
-    await base44.functions.invoke('manageWork', { action: 'delete', work_id: work.id });
+    await db.functions.invoke('manageWork', { action: 'delete', work_id: work.id });
     notifyWorksChanged();
     navigate(isOwner ? '/my-works' : '/');
   };
@@ -107,7 +107,7 @@ export default function WorkDetail() {
   const saveReview = async () => {
     setSavingReview(true);
     setReviewSaved(false);
-    await base44.entities.Work.update(work.id, {
+    await db.entities.Work.update(work.id, {
       leader_score: score === '' ? null : Number(score),
       leader_note: note.trim(),
     });

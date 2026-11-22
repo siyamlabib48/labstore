@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, FolderOpen, FlaskConical, Upload, ArrowRight, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
 import { batchStatusOf, batchLabs } from '@/lib/batches';
@@ -32,9 +32,9 @@ export default function Home() {
     setLoading(true);
     setError('');
     Promise.all([
-      base44.functions.invoke('manageMembers', { action: 'directory', batch_id: activeBatch.id }),
-      base44.entities.Work.filter({ batch: activeBatch.id }, { sort: '-created_date', limit: 3 }),
-      base44.entities.Work.count({ batch: activeBatch.id }),
+      db.functions.invoke('manageMembers', { action: 'directory', batch_id: activeBatch.id }),
+      db.entities.Work.filter({ batch: activeBatch.id }, { sort: '-created_date', limit: 3 }),
+      db.entities.Work.count({ batch: activeBatch.id }),
     ])
       .then(([directory, page, count]) => {
         if (!alive) return;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const FRIENDS_EVENT = 'lablink:friends-changed';
@@ -15,7 +15,7 @@ export function usePendingCount(userId) {
     if (!userId) return undefined;
     let alive = true;
     const load = () => {
-      base44.entities.Friendship.count({ recipient_id: userId, status: 'pending' }).then((value) => {
+      db.entities.Friendship.count({ recipient_id: userId, status: 'pending' }).then((value) => {
         if (alive) setCount(value || 0);
       });
     };
@@ -45,7 +45,7 @@ export function useFriendship(me, target) {
       setLoading(false);
       return;
     }
-    const page = await base44.entities.Friendship.filter(
+    const page = await db.entities.Friendship.filter(
       {
         $or: [
           { requester_id: me.id, recipient_id: targetId },
@@ -59,7 +59,7 @@ export function useFriendship(me, target) {
     const live = (page.items || []).find((item) => item.status !== 'rejected') || null;
     setRow(live);
     if (!live) {
-      const approvals = await base44.entities.FriendApprovalRequest.filter(
+      const approvals = await db.entities.FriendApprovalRequest.filter(
         { requester_id: me.id, recipient_id: targetId, status: 'pending' },
         { limit: 1 }
       ).catch(() => ({ items: [] }));
@@ -91,7 +91,7 @@ export function useFriendship(me, target) {
   const send = (note) =>
     run(async () => {
       try {
-        const res = await base44.functions.invoke('manageFriendApproval', {
+        const res = await db.functions.invoke('manageFriendApproval', {
           action: 'request',
           recipient_id: target.id,
           note: (note || '').trim() || undefined,
@@ -115,18 +115,18 @@ export function useFriendship(me, target) {
       }
     });
 
-  const cancel = () => run(() => base44.entities.Friendship.delete(row.id));
+  const cancel = () => run(() => db.entities.Friendship.delete(row.id));
   const accept = () =>
     run(async () => {
-      await base44.entities.Friendship.update(row.id, { status: 'accepted' });
-      await base44.functions
+      await db.entities.Friendship.update(row.id, { status: 'accepted' });
+      await db.functions
         .invoke('notify', { action: 'friend_accept', friendship_id: row.id })
         .catch(() => {});
     });
   // Declining keeps the row as 'rejected' instead of deleting it, so the
   // refusal is on record. It never blocks a fresh request later.
   const decline = () =>
-    run(() => base44.entities.Friendship.update(row.id, { status: 'rejected' }));
+    run(() => db.entities.Friendship.update(row.id, { status: 'rejected' }));
 
   const status = row
     ? row.status === 'accepted'
@@ -153,15 +153,15 @@ export function useFriendLists(me) {
       return;
     }
     const [inc, out, acc] = await Promise.all([
-      base44.entities.Friendship.filter(
+      db.entities.Friendship.filter(
         { recipient_id: me.id, status: 'pending' },
         { sort: '-created_date', limit: 50 }
       ),
-      base44.entities.Friendship.filter(
+      db.entities.Friendship.filter(
         { requester_id: me.id, status: 'pending' },
         { sort: '-created_date', limit: 50 }
       ),
-      base44.entities.Friendship.filter(
+      db.entities.Friendship.filter(
         { status: 'accepted', $or: [{ requester_id: me.id }, { recipient_id: me.id }] },
         { sort: '-updated_date', limit: 100 }
       ),

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 
 const WORKS_EVENT = 'labstore:works-changed';
 
@@ -13,7 +13,7 @@ export default function useMyWorks(userId) {
 
   const reload = useCallback(async () => {
     if (!userId) return;
-    const page = await base44.entities.Work.filter(
+    const page = await db.entities.Work.filter(
       { created_by_id: userId },
       { sort: '-created_date', limit: 200 }
     );

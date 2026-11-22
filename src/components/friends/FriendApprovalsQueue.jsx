@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ShieldCheck, Loader2, Check, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useToast } from '@/components/ui/use-toast';
 import { timeAgo } from '@/lib/format';
 import { labOf } from '@/lib/labs';
@@ -29,7 +29,7 @@ export default function FriendApprovalsQueue({ me }) {
       setLoading(false);
       return;
     }
-    const page = await base44.entities.FriendApprovalRequest.filter(
+    const page = await db.entities.FriendApprovalRequest.filter(
       { status: 'pending' },
       { sort: '-created_date', limit: 100 }
     ).catch(() => ({ items: [] }));
@@ -63,7 +63,7 @@ export default function FriendApprovalsQueue({ me }) {
     }
     setBusyId(row.id);
     try {
-      const res = await base44.functions.invoke('manageFriendApproval', {
+      const res = await db.functions.invoke('manageFriendApproval', {
         action: 'decide',
         approval_id: row.id,
         decision,

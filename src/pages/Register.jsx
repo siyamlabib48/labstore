@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { continueMfa, loginWithGoogle } from "@/lib/authMfa";
+import { supabase } from "@/api/supabaseClient";
+import { loginWithGoogle } from "@/lib/authMfa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
@@ -19,8 +18,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
+  const [showSent, setShowSent] = useState(false);
   const loginPath = "/login" + (safeReturnTo() !== "/" ? "?returnTo=" + encodeURIComponent(safeReturnTo()) : "");
 
   const handleSubmit = async (e) => {
@@ -32,31 +30,19 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await base44.auth.register({ email, password });
-      setShowOtp(true);
-    } catch (err) {
-      setError(authErrorMessage(err, "We couldn't create your account. Please try again."));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const result = await base44.auth.verifyOtp({ email, otpCode });
-      if (result?.mfa_required) {
-        // The account is already verified, so a retry here would fail; sign in again instead.
-        await continueMfa(result, safeReturnTo()).catch(() => window.location.assign(loginPath));
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      // With email confirmation off, sign-up returns a session straight
+      // away. Otherwise the confirmation email carries a link (the free
+      // email template cannot carry a code), so point the member at
+      // their inbox; clicking it signs them in here.
+      if (data.session) {
+        window.location.href = safeReturnTo();
         return;
       }
-      if (result?.access_token) {
-        base44.auth.setToken(result.access_token);
-      }
-      window.location.href = safeReturnTo();
+      setShowSent(true);
     } catch (err) {
-      setError(authErrorMessage(err, "That code is not correct. Check the 6 digits and try again."));
+      setError(authErrorMessage(err, "We couldn't create your account. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -65,13 +51,14 @@ export default function Register() {
   const handleResend = async () => {
     setError("");
     try {
-      await base44.auth.resendOtp(email);
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) throw error;
       toast({
-        title: "Code sent",
-        description: "Check your email for the new code.",
+        title: "Link sent",
+        description: "Check your email for the new confirmation link.",
       });
     } catch (err) {
-      setError(authErrorMessage(err, "We couldn't send a new code. Try again in a moment."));
+      setError(authErrorMessage(err, "We couldn't send a new link. Try again in a moment."));
     }
   };
 
@@ -80,54 +67,35 @@ export default function Register() {
     catch (err) { setError(authErrorMessage(err, 'Unable to sign in with Google. Please try again.')); }
   };
 
-  if (showOtp) {
+  if (showSent) {
     return (
       <AuthLayout
         icon={Mail}
-        title="Verify your email"
-        subtitle={`We sent a code to ${email}`}
+        title="Check your email"
+        subtitle={`We sent a confirmation link to ${email}`}
+        footer={
+          <>
+            Already confirmed?{" "}
+            <Link to={loginPath} className="text-primary font-medium hover:underline">
+              Log in
+            </Link>
+          </>
+        }
       >
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
             {error}
           </div>
         )}
-        <div className="flex justify-center mb-6">
-          <InputOTP
-            maxLength={6}
-            value={otpCode}
-            onChange={setOtpCode}
-            autoFocus
-            autoComplete="one-time-code"
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
-        <Button
-          className="w-full h-12 font-medium"
-          onClick={handleVerify}
-          disabled={loading || otpCode.length < 6}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Verifying...
-            </>
-          ) : (
-            "Verify"
-          )}
-        </Button>
+        <p className="text-sm text-foreground text-center">
+          Click the link in that email to confirm your account — you'll be signed in
+          here automatically. Your account then waits for staff approval before the
+          academy opens up.
+        </p>
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Didn't receive the code?{" "}
+          Didn't receive it?{" "}
           <button onClick={handleResend} className="text-primary font-medium hover:underline">
-            Resend
+            Resend the link
           </button>
         </p>
       </AuthLayout>

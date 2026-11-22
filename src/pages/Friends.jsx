@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, Inbox, Send, Users2, Check, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useFriendLists, notifyFriendsChanged, otherParty } from '@/hooks/useFriends';
 import FriendRow from '@/components/friends/FriendRow';
@@ -36,16 +36,16 @@ export default function Friends() {
 
   const accept = (row) =>
     act(row.id, async () => {
-      await base44.entities.Friendship.update(row.id, { status: 'accepted' });
-      await base44.functions
+      await db.entities.Friendship.update(row.id, { status: 'accepted' });
+      await db.functions
         .invoke('notify', { action: 'friend_accept', friendship_id: row.id })
         .catch(() => {});
     });
-  const remove = (row) => act(row.id, () => base44.entities.Friendship.delete(row.id));
+  const remove = (row) => act(row.id, () => db.entities.Friendship.delete(row.id));
   // Declining an incoming request keeps the row as 'rejected' rather than
   // deleting it; cancelling your own request and unfriending still delete.
   const decline = (row) =>
-    act(row.id, () => base44.entities.Friendship.update(row.id, { status: 'rejected' }));
+    act(row.id, () => db.entities.Friendship.update(row.id, { status: 'rejected' }));
 
   return (
     <div className="space-y-7">

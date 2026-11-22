@@ -1,4 +1,4 @@
-// One real Base44 account per role, used by the login screen's Testing Helpers.
+// One real account per role, used by the login screen's Testing Helpers.
 // Fill in the email you created for each role. An empty email just hides that
 // row's Fill button — it never affects the real login flow.
 export const TEST_ACCOUNTS = [
