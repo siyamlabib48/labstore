@@ -1,10 +1,9 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import { getAccessToken } from '@base44/sdk';
-import { base44, BYPASS_AUTH } from '@/api/base44Client';
+import { supabase, BYPASS_AUTH, fetchProfile } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
 
-// Demo user for the BYPASS_AUTH build flag (see base44Client.js): a local
+// Demo user for the BYPASS_AUTH build flag (see supabaseClient.js): a local
 // owner user that passes every client-side gate so the pages can be
 // reviewed without signing in. Unlocks the UI shell only, never data.
 const DEMO_USER = {
@@ -12,11 +11,16 @@ const DEMO_USER = {
   email: 'demo@labstore.local',
   full_name: 'Demo User',
   role: 'admin',
+  is_admin: true,
   approval_status: 'approved',
   staff_role: 'owner',
   batch: null,
   lab: null,
 };
+
+// There is no hosted "app settings" endpoint anymore; the only consumer
+// needed the app id, so a static object keeps that contract.
+const APP_PUBLIC_SETTINGS = { id: 'labstore', public_settings: {} };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -30,6 +34,23 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
+
+    // Keep the context in step with the Supabase session: sign-ins and
+    // sign-outs in other tabs, token refreshes and password-recovery
+    // landings all flow through here.
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (BYPASS_AUTH) return;
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setIsAuthenticated(false);
+        return;
+      }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        checkUserAuth();
+      }
+    });
+    return () => subscription?.subscription?.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAppState = async () => {
@@ -44,58 +65,24 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
-      
-      try {
-        const publicSettings = await base44.app.getPublicSettings();
-        setAppPublicSettings(publicSettings);
-        
-        // If we got the app public settings successfully, check if user is authenticated.
-        // getAccessToken() also persists a token handed over in the URL, so the
-        // session survives a reload instead of dropping back to signed-out.
-        if (getAccessToken()) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-          setAuthChecked(true);
-        }
-        setIsLoadingPublicSettings(false);
-      } catch (appError) {
-        console.error('App state check failed:', appError);
-        
-        // Handle app-level errors
-        if (appError.status === 403 && appError.data?.extra_data?.reason) {
-          const reason = appError.data.extra_data.reason;
-          if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
-          } else if (reason === 'user_not_registered') {
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
-          } else {
-            setAuthError({
-              type: reason,
-              message: appError.message
-            });
-          }
-        } else {
-          setAuthError({
-            type: 'unknown',
-            message: appError.message || 'Failed to load app'
-          });
-        }
-        setIsLoadingPublicSettings(false);
+      setAppPublicSettings(APP_PUBLIC_SETTINGS);
+
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+
+      if (data.session) {
+        await checkUserAuth();
+      } else {
         setIsLoadingAuth(false);
+        setIsAuthenticated(false);
+        setAuthChecked(true);
       }
+      setIsLoadingPublicSettings(false);
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('App state check failed:', error);
       setAuthError({
         type: 'unknown',
-        message: error.message || 'An unexpected error occurred'
+        message: error.message || 'Failed to load app'
       });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
@@ -112,11 +99,27 @@ export const AuthProvider = ({ children }) => {
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          const currentUser = await base44.auth.me();
-          setUser(currentUser);
+          const { data, error } = await supabase.auth.getUser();
+          if (error) throw error;
+          if (!data.user) throw Object.assign(new Error('No session'), { status: 401 });
+
+          const profile = await fetchProfile(data.user);
+          if (!profile) {
+            // Auth account exists but no profile row: the account was not
+            // registered through this app (or its profile was removed).
+            setUser(null);
+            setIsAuthenticated(false);
+            setAuthError({
+              type: 'user_not_registered',
+              message: 'User not registered for this app'
+            });
+            return null;
+          }
+
+          setUser(profile);
           setIsAuthenticated(true);
           setAuthError(null);
-          return currentUser;
+          return profile;
         } catch (error) {
           lastError = error;
           const rejected = error?.status === 401 || error?.status === 403;
@@ -157,34 +160,36 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       return DEMO_USER;
     }
-    const currentUser = await base44.auth.me();
-    setUser(currentUser);
-    setIsAuthenticated(true);
-    return currentUser;
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    const profile = await fetchProfile(data.user);
+    if (profile) {
+      setUser(profile);
+      setIsAuthenticated(true);
+    }
+    return profile;
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    
+    if (!BYPASS_AUTH) {
+      await supabase.auth.signOut().catch(() => {});
+    }
     if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
+      window.location.href = '/login';
     }
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/login?returnTo=${returnTo}`;
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,
