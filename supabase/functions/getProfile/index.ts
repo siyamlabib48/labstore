@@ -1,4 +1,4 @@
-import { getCaller, serviceClient, svc, UUID_RE } from '../_shared/svc.ts';
+import { getCaller, serviceClient, svc, UUID_RE, withCors } from '../_shared/svc.ts';
 import { isApproved, isOwner, pendingApproval, sameBatch } from '../_shared/access.ts';
 
 // Returns the public profile of any member: identity, academy context, and
@@ -140,4 +140,4 @@ async function handler(req: Request) {
   }
 }
 
-Deno.serve(handler);
+Deno.serve(withCors(handler));

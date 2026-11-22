@@ -1,4 +1,4 @@
-import { getCaller, serviceClient, svc } from '../_shared/svc.ts';
+import { getCaller, serviceClient, svc, withCors } from '../_shared/svc.ts';
 import { isApproved, isOwner, pendingApproval } from '../_shared/access.ts';
 
 // Rankings resolve in this order: lab board (batch + lab), batch board, or — for
@@ -99,4 +99,4 @@ async function handler(req: Request) {
   }
 }
 
-Deno.serve(handler);
+Deno.serve(withCors(handler));

@@ -1,4 +1,4 @@
-import { getCaller, mapUser, serviceClient, svc } from '../_shared/svc.ts';
+import { getCaller, mapUser, serviceClient, svc, withCors } from '../_shared/svc.ts';
 import {
   canApproveSignups,
   canAssignLeaders,
@@ -261,4 +261,4 @@ async function handler(req: Request) {
   }
 }
 
-Deno.serve(handler);
+Deno.serve(withCors(handler));

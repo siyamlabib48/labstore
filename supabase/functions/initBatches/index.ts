@@ -1,4 +1,4 @@
-import { getCaller, mapUser, serviceClient, svc } from '../_shared/svc.ts';
+import { getCaller, mapUser, serviceClient, svc, withCors } from '../_shared/svc.ts';
 import { isApproved, isOwner, pendingApproval } from '../_shared/access.ts';
 
 // The two canonical batches the academy runs on.
@@ -271,4 +271,4 @@ async function handler(req: Request) {
   }
 }
 
-Deno.serve(handler);
+Deno.serve(withCors(handler));

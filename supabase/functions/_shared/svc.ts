@@ -128,3 +128,28 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 // to its own profile.
 export const mapUser = (profile: any) =>
   profile ? { ...profile, role: profile.is_admin ? 'admin' : 'user' } : null;
+
+// Browser calls to these functions are cross-origin (the app is served
+// from GitHub Pages / localhost), so every function is served through
+// this wrapper: it answers the CORS preflight and stamps the allow
+// headers on the real response. Without it the gateway passes OPTIONS
+// into the handler, which 401s without CORS headers and the browser
+// blocks every function call.
+export const corsHeaders = (req: Request) => ({
+  'Access-Control-Allow-Origin': req.headers.get('origin') || '*',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  Vary: 'Origin',
+});
+
+export const withCors =
+  (handler: (req: Request) => Promise<Response>) =>
+  async (req: Request): Promise<Response> => {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders(req) });
+    }
+    const res = await handler(req);
+    const headers = new Headers(res.headers);
+    for (const [key, value] of Object.entries(corsHeaders(req))) headers.set(key, value);
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+  };

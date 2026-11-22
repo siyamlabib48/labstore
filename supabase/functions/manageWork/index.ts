@@ -1,4 +1,4 @@
-import { getCaller, serviceClient, svc } from '../_shared/svc.ts';
+import { getCaller, serviceClient, svc, withCors } from '../_shared/svc.ts';
 import {
   canDeleteWork,
   canReviewWork,
@@ -308,4 +308,4 @@ async function handler(req: Request) {
   }
 }
 
-Deno.serve(handler);
+Deno.serve(withCors(handler));

@@ -1,4 +1,4 @@
-import { getCaller, serviceClient, svc } from '../_shared/svc.ts';
+import { getCaller, serviceClient, svc, withCors } from '../_shared/svc.ts';
 import { canPublishAnnouncements, isApproved, isOwner, pendingApproval, sameBatch } from '../_shared/access.ts';
 
 const clip = (text: unknown, max: number) => String(text || '').slice(0, max);
@@ -191,4 +191,4 @@ async function handler(req: Request) {
   }
 }
 
-Deno.serve(handler);
+Deno.serve(withCors(handler));
