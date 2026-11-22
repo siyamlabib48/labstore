@@ -238,7 +238,10 @@ const functions = {
       err.status = error.context?.status || 500;
       throw err;
     }
-    return data;
+    // The app was written against an invoke() that resolves to
+    // { data } — every call site reads res.data — so keep that shape
+    // here rather than returning the body bare.
+    return { data };
   },
 };
 

@@ -150,7 +150,8 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
     const ids = [...new Set(rows.map((row) => row.created_by_id).filter(Boolean))];
     if (ids.length === 0) return rows;
     try {
-      const { authors } = await db.functions.invoke('getProfile', { user_ids: ids });
+      const res = await db.functions.invoke('getProfile', { user_ids: ids });
+      const authors = res.data?.authors;
       const byId = new Map((authors || []).map((author) => [author.id, author]));
       return rows.map((row) => {
         const author = byId.get(row.created_by_id);
