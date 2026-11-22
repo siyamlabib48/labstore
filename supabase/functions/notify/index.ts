@@ -5,7 +5,7 @@ const clip = (text: unknown, max: number) => String(text || '').slice(0, max);
 
 // Creates in-app notifications for the right recipients. Every action re-checks
 // the triggering record server-side so a caller cannot notify arbitrary members.
-export default async function (req: Request) {
+async function handler(req: Request) {
   try {
     const db = serviceClient();
     const me = await getCaller(req, db);
@@ -190,3 +190,5 @@ export default async function (req: Request) {
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
+
+Deno.serve(handler);

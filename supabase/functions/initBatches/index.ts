@@ -35,7 +35,7 @@ const chunk = (rows: any[], size: number) => {
 // before PostComment carried post_visibility are also stamped with their
 // parent post's visibility, so older comments on academy posts become
 // visible academy-wide like new ones.
-export default async function (req: Request) {
+async function handler(req: Request) {
   try {
     const db = serviceClient();
     const caller = await getCaller(req, db);
@@ -270,3 +270,5 @@ export default async function (req: Request) {
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
+
+Deno.serve(handler);

@@ -4,7 +4,7 @@ import { isApproved, isOwner, pendingApproval } from '../_shared/access.ts';
 // Rankings resolve in this order: lab board (batch + lab), batch board, or — for
 // the owner only — every batch. Deleted works never count: the tally is built from
 // the Work rows that exist right now.
-export default async function (req: Request) {
+async function handler(req: Request) {
   try {
     const db = serviceClient();
     const user = await getCaller(req, db);
@@ -99,3 +99,5 @@ export default async function (req: Request) {
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
+
+Deno.serve(handler);

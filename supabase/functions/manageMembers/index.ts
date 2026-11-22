@@ -26,7 +26,7 @@ const safeMember = (u: any) => ({
   created_date: u.created_at,
 });
 
-export default async function (req: Request) {
+async function handler(req: Request) {
   try {
     const db = serviceClient();
     const caller = await getCaller(req, db);
@@ -262,3 +262,5 @@ export default async function (req: Request) {
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
+
+Deno.serve(handler);

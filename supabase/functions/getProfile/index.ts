@@ -3,7 +3,7 @@ import { isApproved, isOwner, pendingApproval, sameBatch } from '../_shared/acce
 
 // Returns the public profile of any member: identity, academy context, and
 // aggregate counts. Never returns email or platform role.
-export default async function (req: Request) {
+async function handler(req: Request) {
   try {
     const db = serviceClient();
     const user = await getCaller(req, db);
@@ -137,3 +137,5 @@ export default async function (req: Request) {
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
+
+Deno.serve(handler);

@@ -14,7 +14,7 @@ const clip = (text: unknown, max: number) => String(text || '').slice(0, max);
 // either creates the pending Friendship directly or files a
 // FriendApprovalRequest for the requester's lab teacher / batch coordinator
 // to decide. The decide action then creates the Friendship on approval.
-export default async function (req: Request) {
+async function handler(req: Request) {
   try {
     const db = serviceClient();
     const me = await getCaller(req, db);
@@ -224,3 +224,5 @@ export default async function (req: Request) {
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
+
+Deno.serve(handler);

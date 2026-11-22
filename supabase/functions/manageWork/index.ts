@@ -109,7 +109,7 @@ const quotaError = (total: number, remaining: number) =>
 // Authoritative work lifecycle: measures real bytes before writing, enforces the
 // 500 MB quota server-side, pins records to the caller's batch/lab, and frees
 // quota on deletion because usage is always recomputed from stored works.
-export default async function (req: Request) {
+async function handler(req: Request) {
   try {
     const db = serviceClient();
     const me = await getCaller(req, db);
@@ -307,3 +307,5 @@ export default async function (req: Request) {
     return Response.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
+
+Deno.serve(handler);
