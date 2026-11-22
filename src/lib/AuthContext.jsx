@@ -1,8 +1,22 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { getAccessToken } from '@base44/sdk';
-import { base44 } from '@/api/base44Client';
+import { base44, BYPASS_AUTH } from '@/api/base44Client';
 
 const AuthContext = createContext();
+
+// Demo user for the BYPASS_AUTH build flag (see base44Client.js): a local
+// owner user that passes every client-side gate so the pages can be
+// reviewed without signing in. Unlocks the UI shell only, never data.
+const DEMO_USER = {
+  id: 'demo-user',
+  email: 'demo@labstore.local',
+  full_name: 'Demo User',
+  role: 'admin',
+  approval_status: 'approved',
+  staff_role: 'owner',
+  batch: null,
+  lab: null,
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -19,6 +33,14 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
+    if (BYPASS_AUTH) {
+      setUser(DEMO_USER);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      setIsLoadingPublicSettings(false);
+      setAuthChecked(true);
+      return;
+    }
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -130,6 +152,11 @@ export const AuthProvider = ({ children }) => {
   // Re-reads the signed-in member without flipping the app into a loading state,
   // so saved profile changes appear instantly instead of flashing a spinner.
   const refreshUser = async () => {
+    if (BYPASS_AUTH) {
+      setUser(DEMO_USER);
+      setIsAuthenticated(true);
+      return DEMO_USER;
+    }
     const currentUser = await base44.auth.me();
     setUser(currentUser);
     setIsAuthenticated(true);
