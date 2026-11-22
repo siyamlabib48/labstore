@@ -4,6 +4,7 @@ import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
 import {
+  canEditBatches,
   canManageBatch,
   canRemoveMembers,
   canSetLabLeader,
@@ -24,6 +25,7 @@ export default function Admin() {
   const { user } = useAuth();
   const { batches, available, activeBatch, refresh } = useBatch();
   const owner = isOwnerOf(user);
+  const canBatches = canEditBatches(user);
   const canManage = canManageBatch(user);
   const removable = canRemoveMembers(user);
   const canLead = canSetLabLeader(user);
@@ -45,6 +47,9 @@ export default function Admin() {
   const [batchBusy, setBatchBusy] = useState(null);
   const [error, setError] = useState('');
   const [removeTarget, setRemoveTarget] = useState(null);
+  // Member counts per batch drive the delete rule in BatchManager: a
+  // coordinator may delete only a batch with no members in it.
+  const [memberCounts, setMemberCounts] = useState({});
 
   const call = async (payload) => {
     const res = await db.functions.invoke('manageMembers', payload);
@@ -136,6 +141,21 @@ export default function Admin() {
     if (canManage) loadReports(batch?.id);
   }, [batch?.id, canManage]);
 
+  useEffect(() => {
+    if (!canBatches || !batches.length) return;
+    let alive = true;
+    Promise.all(
+      batches.map((batch) =>
+        db.entities.User.count({ batch: batch.id }).then((count) => [batch.id, count || 0]).catch(() => [batch.id, 0])
+      )
+    ).then((entries) => {
+      if (alive) setMemberCounts(Object.fromEntries(entries));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [batches, canBatches]);
+
   if (!canManage) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-white/60 px-6 py-20 text-center">
@@ -214,6 +234,17 @@ export default function Admin() {
     setBatchBusy(null);
   };
 
+  const deleteBatch = async (id) => {
+    setBatchBusy(id);
+    try {
+      await db.entities.Batch.delete(id);
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+    setBatchBusy(null);
+  };
+
   return (
     <div className="space-y-7">
       <div>
@@ -237,11 +268,14 @@ export default function Admin() {
 
       {owner && <BatchSeeder onDone={refresh} />}
 
-      {owner && (
+      {canBatches && (
         <BatchManager
           batches={batches}
           onCreate={createBatch}
           onUpdate={updateBatch}
+          onDelete={deleteBatch}
+          memberCounts={memberCounts}
+          isOwnerUser={owner}
           busy={batchBusy}
         />
       )}

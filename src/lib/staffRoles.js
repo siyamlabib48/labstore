@@ -54,6 +54,14 @@ export const isStaffManager = (user) =>
 
 export const canManageBatch = (user) => isOwner(user) || isStaffManager(user);
 
+// Batch administration (create / edit / delete batches themselves, as
+// opposed to managing a batch's members): the owner and coordinators.
+// A coordinator may delete a batch only while it has no members — once
+// a student is placed in it, deletion is owner-only. The row policies
+// enforce the same rule server-side.
+export const canEditBatches = (user) =>
+  isOwner(user) || user?.staff_role === 'coordinator';
+
 // Removal: a coordinator inside their own batch, or the owner as an override.
 export const canRemoveMembers = (user) =>
   isOwner(user) || user?.staff_role === 'coordinator';
