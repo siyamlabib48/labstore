@@ -107,6 +107,13 @@ export const svc = {
     return data;
   },
 
+  async bulkUpdate(db: any, table: string, ids: string[], patch: Record<string, unknown>) {
+    if (ids.length === 0) return [];
+    const { data, error } = await db.from(table).update(patch).in('id', ids).select();
+    if (error) throw error;
+    return data || [];
+  },
+
   async remove(db: any, table: string, id: string) {
     const { error } = await db.from(table).delete().eq('id', id);
     if (error) throw error;
@@ -115,3 +122,9 @@ export const svc = {
 };
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Maps a raw profiles row to the app-user shape (role from is_admin), the
+// same mapping getCaller applies to the caller and the frontend applies
+// to its own profile.
+export const mapUser = (profile: any) =>
+  profile ? { ...profile, role: profile.is_admin ? 'admin' : 'user' } : null;
