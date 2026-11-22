@@ -8,7 +8,7 @@ export function navItems({ canManage, pending = 0 }) {
     { to: '/announcements', label: 'Notices', icon: Megaphone },
     { to: '/chats', label: 'Chats', icon: MessageCircle },
     { to: '/upload', label: 'Upload', icon: Upload },
-    { to: '/my-works', label: 'My works', icon: FolderOpen },
+    { to: '/gallery?view=mine', label: 'My works', icon: FolderOpen },
     { to: '/progress', label: 'Progress', icon: Target },
     { to: '/leaderboard', label: 'Ranks', icon: Trophy },
     { to: '/friends', label: 'Friends', icon: Users, badge: pending },

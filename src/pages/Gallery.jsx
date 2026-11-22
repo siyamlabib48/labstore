@@ -1,20 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Loader2 } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Plus, Loader2, Trash2 } from 'lucide-react';
 import { db } from '@/api/dataClient';
 import { useBatch } from '@/lib/BatchContext';
+import { useAuth } from '@/lib/AuthContext';
+import useMyWorks, { notifyWorksChanged } from '@/hooks/useMyWorks';
 import { batchLabs } from '@/lib/batches';
 import { ChevronsUpDown } from 'lucide-react';
 import WorkCard from '@/components/work/WorkCard';
 import GalleryFilters from '@/components/work/GalleryFilters';
 import ErrorState from '@/components/common/ErrorState';
+import QuotaMeter from '@/components/account/QuotaMeter';
 import { Button } from '@/components/ui/button';
 import { labOf } from '@/lib/labs';
+import { cn } from '@/lib/utils';
+import { formatBytes, QUOTA_BYTES } from '@/lib/format';
 
 const PAGE_SIZE = 12;
 
 export default function Gallery() {
   const { activeBatch, available, isOwner, loading: batchLoading } = useBatch();
+  const { user } = useAuth();
+  // One works page, two views: the batch gallery and the member's own
+  // archive ("My works" used to be a separate page listing the same
+  // works — it lives here now, at /gallery?view=mine; the old /my-works
+  // route redirects here). The mine view spans all of the member's
+  // batches and adds the storage quota plus quick delete.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mine = searchParams.get('view') === 'mine';
+  const { usedBytes } = useMyWorks(mine ? user?.id : null);
   // The owner can look at one batch or every batch at once; everyone else stays
   // inside their own batch.
   const [scopeId, setScopeId] = useState('');
@@ -32,26 +46,32 @@ export default function Gallery() {
   const chosenId = scopeId || activeBatch?.id || '';
   const batchId = allBatches ? '' : chosenId;
   const chosenBatch = available.find((item) => item.id === chosenId) || activeBatch;
-  const labs = allBatches
+  const labs = allBatches || mine
     ? Array.from(new Set(available.flatMap((item) => batchLabs(item))))
     : chosenId
     ? batchLabs(chosenBatch)
     : [];
+
+  const buildQuery = () => {
+    const query = {};
+    if (mine) query.created_by_id = user.id;
+    else if (batchId) query.batch = batchId;
+    if (lab !== 'all') query.lab = lab;
+    if (type !== 'all') query.work_type = type;
+    return query;
+  };
 
   useEffect(() => {
     setLab('all');
   }, [batchId]);
 
   useEffect(() => {
-    if (!batchId && !allBatches) {
+    if (!mine && !batchId && !allBatches) {
       setLoading(false);
       return;
     }
     let alive = true;
-    const query = {};
-    if (batchId) query.batch = batchId;
-    if (lab !== 'all') query.lab = lab;
-    if (type !== 'all') query.work_type = type;
+    const query = buildQuery();
 
     setLoading(true);
     setError('');
@@ -74,15 +94,13 @@ export default function Gallery() {
     return () => {
       alive = false;
     };
-  }, [batchId, lab, type, reloadKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchId, lab, type, reloadKey, mine, user?.id]);
 
   const loadMore = async () => {
     if (!cursor) return;
     setLoadingMore(true);
-    const query = {};
-    if (batchId) query.batch = batchId;
-    if (lab !== 'all') query.lab = lab;
-    if (type !== 'all') query.work_type = type;
+    const query = buildQuery();
     const page = await db.entities.Work.filter(query, {
       sort: '-created_date',
       limit: PAGE_SIZE,
@@ -95,6 +113,13 @@ export default function Gallery() {
 
   const scope = lab === 'all' ? 'across every lab' : `in ${labOf(lab).label}`;
 
+  const removeWork = async (work) => {
+    if (!window.confirm(`Delete "${work.title}"? This frees ${formatBytes(work.file_size_bytes)}.`)) return;
+    await db.functions.invoke('manageWork', { action: 'delete', work_id: work.id });
+    notifyWorksChanged();
+    setReloadKey((key) => key + 1);
+  };
+
   return (
     <div className="space-y-7">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -103,14 +128,16 @@ export default function Gallery() {
             {activeBatch?.course_name || 'Project cloud'}
           </p>
           <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight sm:text-[2.6rem] sm:leading-[1.05]">
-            Gallery
+            {mine ? 'My works' : 'Gallery'}
           </h1>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
             {batchLoading || loading
               ? 'Loading works…'
-              : `${total} work${total === 1 ? '' : 's'} shared ${scope} in ${
-                  allBatches ? `all ${available.length} batches` : chosenBatch?.name || 'your batch'
-                }.`}
+              : mine
+                ? `${total} work${total === 1 ? '' : 's'} by you ${scope}. ${formatBytes(QUOTA_BYTES - usedBytes)} of your 500 MB free.`
+                : `${total} work${total === 1 ? '' : 's'} shared ${scope} in ${
+                    allBatches ? `all ${available.length} batches` : chosenBatch?.name || 'your batch'
+                  }.`}
           </p>
         </div>
         <Button asChild size="lg" className="rounded-full px-6">
@@ -120,7 +147,46 @@ export default function Gallery() {
         </Button>
       </div>
 
-      {isOwner && (
+      <div className="flex flex-wrap items-center gap-2">
+        {[
+          { key: false, label: 'All works' },
+          { key: true, label: 'My works' },
+        ].map((tab) => (
+          <button
+            key={tab.label}
+            type="button"
+            onClick={() => setSearchParams(tab.key ? { view: 'mine' } : {}, { replace: true })}
+            className={cn(
+              'rounded-full px-4 py-1.5 text-xs font-semibold transition-all',
+              mine === tab.key
+                ? 'bg-slate-900 text-white'
+                : 'border border-border/80 bg-white text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {mine && (
+        <div className="rounded-2xl border border-border/70 bg-white p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Storage quota
+            </h3>
+            <p className="font-heading text-lg font-bold tracking-tight">
+              {formatBytes(usedBytes)}
+              <span className="text-sm font-medium text-muted-foreground"> / 500 MB used</span>
+            </p>
+          </div>
+          <QuotaMeter usedBytes={usedBytes} compact className="mt-3 border-none bg-transparent p-0" />
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            Every upload counts against your 500 MB. Delete a work to free its space.
+          </p>
+        </div>
+      )}
+
+      {isOwner && !mine && (
         <div className="relative inline-block">
           <select
             value={allBatches ? 'all' : chosenId}
@@ -147,7 +213,7 @@ export default function Gallery() {
           message={error}
           onRetry={() => setReloadKey((key) => key + 1)}
         />
-      ) : !batchId && !allBatches ? (
+      ) : !mine && !batchId && !allBatches ? (
         <div className="rounded-3xl border border-dashed border-border bg-white/60 px-6 py-16 text-center">
           <h3 className="font-heading text-lg font-bold tracking-tight">No batch yet</h3>
           <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
@@ -169,10 +235,14 @@ export default function Gallery() {
         </div>
       ) : works.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-white/60 px-6 py-16 text-center">
-          <h3 className="font-heading text-lg font-bold tracking-tight">Nothing here yet</h3>
+          <h3 className="font-heading text-lg font-bold tracking-tight">
+            {mine ? 'Your archive is empty' : 'Nothing here yet'}
+          </h3>
           <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-            No works match this filter in {allBatches ? 'any batch' : chosenBatch?.name}. Be the
-            first to put something on the board.
+            {mine
+              ? 'Upload your first project to start building your portfolio.'
+              : `No works match this filter in ${allBatches ? 'any batch' : chosenBatch?.name}. Be the
+            first to put something on the board.`}
           </p>
           <Button asChild className="mt-5 rounded-full">
             <Link to="/upload">Upload your first work</Link>
@@ -181,9 +251,24 @@ export default function Gallery() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {works.map((work) => (
-              <WorkCard key={work.id} work={work} />
-            ))}
+            {works.map((work) =>
+              mine ? (
+                <div key={work.id} className="relative">
+                  <WorkCard work={work} />
+                  <button
+                    type="button"
+                    onClick={() => removeWork(work)}
+                    aria-label={`Delete ${work.title}`}
+                    title="Delete this work"
+                    className="absolute bottom-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-muted-foreground shadow-md transition-colors hover:bg-[#DB2777]/10 hover:text-[#BE185D]"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <WorkCard key={work.id} work={work} />
+              )
+            )}
           </div>
           {cursor && (
             <div className="flex justify-center pt-2">

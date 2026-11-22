@@ -101,7 +101,7 @@ export default function WorkDetail() {
     // re-checked on the server.
     await db.functions.invoke('manageWork', { action: 'delete', work_id: work.id });
     notifyWorksChanged();
-    navigate(isOwner ? '/my-works' : '/');
+    navigate(isOwner ? '/gallery?view=mine' : '/');
   };
 
   const saveReview = async () => {

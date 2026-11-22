@@ -214,7 +214,7 @@ export default function Home() {
               <Link to="/leaderboard" className="flex items-center justify-between rounded-lg px-2 py-2 text-xs font-semibold hover:bg-muted">
                 Batch leaderboard <ArrowRight className="h-3 w-3" />
               </Link>
-              <Link to="/my-works" className="flex items-center justify-between rounded-lg px-2 py-2 text-xs font-semibold hover:bg-muted">
+              <Link to="/gallery?view=mine" className="flex items-center justify-between rounded-lg px-2 py-2 text-xs font-semibold hover:bg-muted">
                 My works & storage <ArrowRight className="h-3 w-3" />
               </Link>
             </div>

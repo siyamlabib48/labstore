@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -15,7 +15,7 @@ import Chat from '@/pages/Chat';
 import Notifications from '@/pages/Notifications';
 import WorkDetail from '@/pages/WorkDetail';
 import UploadWork from '@/pages/UploadWork';
-import MyWorks from '@/pages/MyWorks';
+
 import Leaderboard from '@/pages/Leaderboard';
 import Profile from '@/pages/Profile';
 import Friends from '@/pages/Friends';
@@ -73,7 +73,7 @@ const AuthenticatedApp = () => {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/work/:id" element={<WorkDetail />} />
         <Route path="/upload" element={<UploadWork />} />
-        <Route path="/my-works" element={<MyWorks />} />
+        <Route path="/my-works" element={<Navigate to="/gallery?view=mine" replace />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/friends" element={<Friends />} />
