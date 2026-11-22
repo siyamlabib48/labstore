@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,13 +8,36 @@ import { Lock, Loader2, AlertTriangle } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
-  const resetToken = searchParams.get("token");
-
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // The reset email links here with a recovery code in the URL, which the
+  // Supabase client exchanges for a session automatically. Until that
+  // session lands there is nothing safe to attach the new password to.
+  const [ready, setReady] = useState(false);
+  const [invalid, setInvalid] = useState(false);
+
+  useEffect(() => {
+    let settled = false;
+    const markReady = () => {
+      settled = true;
+      setReady(true);
+    };
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) markReady();
+    });
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN")) markReady();
+    });
+    const timer = setTimeout(() => {
+      if (!settled) setInvalid(true);
+    }, 3000);
+    return () => {
+      subscription.subscription.unsubscribe();
+      clearTimeout(timer);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +48,10 @@ export default function ResetPassword() {
     }
     setLoading(true);
     try {
-      await base44.auth.resetPassword({ resetToken, newPassword });
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
+      // End the recovery session so the new password is used at next login.
+      await supabase.auth.signOut().catch(() => {});
       window.location.href = "/login";
     } catch (err) {
       setError(err.message || "Failed to reset password");
@@ -34,7 +60,7 @@ export default function ResetPassword() {
     }
   };
 
-  if (!resetToken) {
+  if (invalid && !ready) {
     return (
       <AuthLayout
         icon={AlertTriangle}
@@ -47,7 +73,7 @@ export default function ResetPassword() {
         }
       >
         <p className="text-sm text-foreground text-center">
-          The link you used appears to be incomplete. Please request a new password reset email.
+          The link you used appears to be incomplete or has expired. Please request a new password reset email.
         </p>
       </AuthLayout>
     );
@@ -64,51 +90,57 @@ export default function ResetPassword() {
           {error}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="password">New Password</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              autoFocus
-              placeholder="••••••••"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
-          </div>
+      {!ready ? (
+        <div className="flex justify-center py-4">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm">Confirm Password</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="confirm"
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="password">New Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                autoFocus
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="pl-10 h-12"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Resetting...
-            </>
-          ) : (
-            "Reset password"
-          )}
-        </Button>
-      </form>
+          <div className="space-y-2">
+            <Label htmlFor="confirm">Confirm Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="confirm"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="pl-10 h-12"
+                required
+              />
+            </div>
+          </div>
+          <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Resetting...
+              </>
+            ) : (
+              "Reset password"
+            )}
+          </Button>
+        </form>
+      )}
     </AuthLayout>
   );
 }

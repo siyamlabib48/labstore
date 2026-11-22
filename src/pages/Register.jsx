@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { continueMfa, loginWithGoogle } from "@/lib/authMfa";
+import { supabase } from "@/api/supabaseClient";
+import { loginWithGoogle } from "@/lib/authMfa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,14 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await base44.auth.register({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      // With email confirmation off, sign-up returns a session straight
+      // away and there is no code to verify.
+      if (data.session) {
+        window.location.href = safeReturnTo();
+        return;
+      }
       setShowOtp(true);
     } catch (err) {
       setError(authErrorMessage(err, "We couldn't create your account. Please try again."));
@@ -45,15 +52,10 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      const result = await base44.auth.verifyOtp({ email, otpCode });
-      if (result?.mfa_required) {
-        // The account is already verified, so a retry here would fail; sign in again instead.
-        await continueMfa(result, safeReturnTo()).catch(() => window.location.assign(loginPath));
-        return;
-      }
-      if (result?.access_token) {
-        base44.auth.setToken(result.access_token);
-      }
+      const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "signup" });
+      if (error) throw error;
+      // verifyOtp leaves a live session behind, so the app can open
+      // straight away; the new profile starts as pending approval.
       window.location.href = safeReturnTo();
     } catch (err) {
       setError(authErrorMessage(err, "That code is not correct. Check the 6 digits and try again."));
@@ -65,7 +67,8 @@ export default function Register() {
   const handleResend = async () => {
     setError("");
     try {
-      await base44.auth.resendOtp(email);
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) throw error;
       toast({
         title: "Code sent",
         description: "Check your email for the new code.",
