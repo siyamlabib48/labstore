@@ -38,7 +38,8 @@ export const staffRoleOf = (key) => STAFF_ROLES[key] || STAFF_ROLES.member;
 
 export const isOwner = (user) => user?.role === 'admin';
 
-// The CR and ACR lead their lab on the student side.
+// The CR and ACR lead their lab on the student side. Their only duty is
+// posting announcements for their own lab.
 export const isLabRep = (user) => ['cr', 'acr'].includes(user?.staff_role);
 
 // The single effective role of a member, used for display and capability checks.
@@ -69,16 +70,23 @@ export const canRemoveMembers = (user) =>
 // The owner removing a member is an override and is confirmed as such.
 export const removeNeedsOverride = (user) => isOwner(user);
 
-// Only the owner may change another member's staff role.
+// Only the owner may change another member's staff role — with one
+// exception: a coordinator or a dedicated teacher may appoint the
+// leaders of their scope (a batch's, or their lab's, CR and ACR) by
+// moving a student between member / cr / acr.
 export const canChangeRoles = (user) => isOwner(user);
+
+export const canAssignLeaders = (user) =>
+  isOwner(user) || user?.staff_role === 'coordinator' || user?.staff_role === 'dedicated_teacher';
 
 // Staff, the CR, and the ACR (own lab only) may publish notices.
 export const canPostAnnouncements = (user) =>
   canManageBatch(user) || ['cr', 'acr'].includes(user?.staff_role);
 
-// Who a posted notice reaches.
+// Who a posted notice reaches: the CR and ACR write to their own lab
+// only; staff write to the whole batch.
 export const announcementScopeOf = (user) =>
-  user?.staff_role === 'acr' ? 'lab' : 'batch';
+  ['cr', 'acr'].includes(user?.staff_role) ? 'lab' : 'batch';
 
 // A notice can be removed by its author, or by the staff who run that batch.
 export const canDeleteAnnouncement = (user, item) => {
@@ -88,24 +96,28 @@ export const canDeleteAnnouncement = (user, item) => {
   return isStaffManager(user) && (!item.batch || item.batch === user.batch);
 };
 
-// Approving a sign-up is an owner or coordination decision.
-export const canApproveSignups = (user) => isOwner(user) || user?.staff_role === 'coordinator';
+// Approving a sign-up belongs to the owner, the batch coordinator, or
+// the lab's dedicated teacher.
+export const canApproveSignups = (user) =>
+  isOwner(user) || user?.staff_role === 'coordinator' || user?.staff_role === 'dedicated_teacher';
 
-// Reviewing a work follows the same rules the Work entity enforces: owner/staff
-// inside the work's batch, or the work's lab CR/ACR.
+// Reviewing a work is the teachers' job (both kinds) plus the
+// coordinator and owner, inside the work's batch. CR/ACR do not review.
 export const canReviewWork = (user, work) => {
   if (!user || !work) return false;
   if (isOwner(user)) return true;
   if (!work.batch || user.batch !== work.batch) return false;
-  if (isStaffManager(user)) return true;
-  return isLabRep(user) && !!user.lab && user.lab === work.lab;
+  return isStaffManager(user);
 };
 
-// Progress tracking is a staff capability; a CR/ACR tracks their own lab.
-export const canTrackProgress = (user) => canManageBatch(user) || isLabRep(user);
+// Progress tracking belongs to the lab's dedicated teacher (with the
+// coordinator and owner above them). Class teachers review works
+// instead, and CR/ACR only post announcements.
+export const canTrackProgress = (user) =>
+  isOwner(user) || ['coordinator', 'dedicated_teacher'].includes(user?.staff_role);
 
 // Member emails are only exposed to the people managing that batch.
-export const canViewMemberEmails = (user) => canTrackProgress(user);
+export const canViewMemberEmails = (user) => canManageBatch(user);
 
 // Content moderation (removing posts and replies) inside the member's own batch.
 export const canModerateContent = (user) => canManageBatch(user);

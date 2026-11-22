@@ -83,8 +83,7 @@ export default function WorkDetail() {
 
   const isAdmin = user?.role === 'admin';
   const isOwner = work.created_by_id === user?.id;
-  const isLabRep = ['cr', 'acr'].includes(user?.staff_role) && user?.lab === work.lab;
-  const canManage = isAdmin || isOwner || isLabRep;
+  const canManage = isAdmin || isOwner;
   const canReview = canReviewWork(user, work);
   const vis = visibilityMeta[work.visibility] || visibilityMeta.all;
   const VisIcon = vis.icon;

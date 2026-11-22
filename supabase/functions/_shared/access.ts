@@ -32,16 +32,26 @@ export const canCoordinate = (user) => isOwner(user) || user?.staff_role === 'co
 export const canPublishAnnouncements = (user) =>
   canManageBatch(user) || ['cr', 'acr'].includes(user?.staff_role);
 
-// Who a member's notice reaches: the ACR only writes to their own lab,
-// everyone else with the capability writes to the whole batch.
+// Who a member's notice reaches: the CR and ACR only write to their own
+// lab; staff write to the whole batch.
 export const announcementScope = (user) =>
-  user?.staff_role === 'acr' ? 'lab' : 'batch';
+  ['cr', 'acr'].includes(user?.staff_role) ? 'lab' : 'batch';
 
 export const canModerateContent = (user) => canManageBatch(user);
 
 export const canCreateChatRooms = (user) => canPublishAnnouncements(user);
 
-export const canApproveSignups = (user) => canCoordinate(user);
+// Sign-up approval: the owner, the batch coordinator, or the lab's
+// dedicated teacher.
+export const canApproveSignups = (user) =>
+  isOwner(user) || user?.staff_role === 'coordinator' || user?.staff_role === 'dedicated_teacher';
+
+// Appointing a lab's leaders (moving a student between member / cr /
+// acr): the owner anywhere, a coordinator in their batch, or a
+// dedicated teacher in their own lab. All other role changes stay
+// owner-only (canChangeRoles).
+export const canAssignLeaders = (user) =>
+  isOwner(user) || user?.staff_role === 'coordinator' || user?.staff_role === 'dedicated_teacher';
 
 // Friend requests between students are held for staff approval first (always
 // on, no toggle). Staff are exempt — the safeguard exists for students only,
@@ -80,14 +90,14 @@ export const canPlaceMembers = (user) => canManageBatch(user);
 // owner as an explicit override.
 export const canRemoveMembers = (user) => canCoordinate(user);
 
-// Academic oversight of a work: owner anywhere, staff inside the work's batch,
-// or the work's lab CR/ACR for their own lab.
+// Academic oversight of a work: owner anywhere, staff (coordinator and
+// both teacher types) inside the work's batch. CR/ACR do not review —
+// their only duty is lab announcements.
 export const canReviewWork = (user, work) => {
   if (!user || !work) return false;
   if (isOwner(user)) return true;
   if (!sameBatch(user, work.batch)) return false;
-  if (canManageBatch(user)) return true;
-  return ['cr', 'acr'].includes(user.staff_role) && !!user.lab && user.lab === work.lab;
+  return canManageBatch(user);
 };
 
 export const canDeleteWork = (user, work) => {

@@ -1,46 +1,25 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Loader2, Target, Trophy } from 'lucide-react';
+import { Loader2, Target } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useBatch } from '@/lib/BatchContext';
-import { canManageBatch } from '@/lib/staffRoles';
-import { cn } from '@/lib/utils';
+import { canTrackProgress } from '@/lib/staffRoles';
 import MyProgress from '@/components/progress/MyProgress';
 import StudentProgressList from '@/components/progress/StudentProgressList';
 import Leaderboard from '@/pages/Leaderboard';
 
-// Progress and Ranks live on one page behind one nav item (they used to
-// be two sidebar entries): the tabs switch between the milestone track
-// and the leaderboard, which keeps its own Lab / Batch / Global scopes.
-// /leaderboard redirects to ?tab=ranks.
+// Progress and Ranks share one page behind one nav item: the two
+// panels sit side by side in a flex row with a partition between them
+// (stacked, with a horizontal rule, on small screens), so both are
+// visible at once — no tab switching. /leaderboard redirects here.
 export default function Progress() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get('tab') === 'ranks' ? 'ranks' : 'progress';
-
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2">
-        {[
-          { key: 'progress', label: 'Progress', icon: Target },
-          { key: 'ranks', label: 'Ranks', icon: Trophy },
-        ].map((option) => (
-          <button
-            key={option.key}
-            type="button"
-            onClick={() => setSearchParams(option.key === 'ranks' ? { tab: 'ranks' } : {}, { replace: true })}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all',
-              tab === option.key
-                ? 'bg-slate-900 text-white'
-                : 'border border-border/80 bg-white text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <option.icon className="h-3.5 w-3.5" />
-            {option.label}
-          </button>
-        ))}
+    <div className="flex flex-col lg:flex-row lg:divide-x lg:divide-border/70">
+      <div className="min-w-0 flex-1 lg:pr-8">
+        <ProgressView />
       </div>
-      {tab === 'ranks' ? <Leaderboard /> : <ProgressView />}
+      <div className="mt-10 min-w-0 flex-1 border-t border-border/70 pt-8 lg:mt-0 lg:border-t-0 lg:pl-8 lg:pt-0">
+        <Leaderboard />
+      </div>
     </div>
   );
 }
@@ -49,10 +28,10 @@ function ProgressView() {
   const { user } = useAuth();
   const { activeBatch, loading } = useBatch();
 
-  const staff = canManageBatch(user);
-  // A CR/ACR leads their own lab: they track progress for that lab only.
-  const repOnly = !staff && ['cr', 'acr'].includes(user?.staff_role);
-  const canTrack = staff || repOnly;
+  // Tracking is the dedicated teacher's job (coordinator/owner above
+  // them); everyone else — class teachers, CR/ACR, students — sees
+  // their own track here.
+  const canTrack = canTrackProgress(user);
 
   return (
     <div className="space-y-5">
@@ -70,7 +49,7 @@ function ProgressView() {
         </p>
       </div>
 
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="w-full">
         {loading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -84,11 +63,7 @@ function ProgressView() {
             </p>
           </div>
         ) : canTrack ? (
-          <StudentProgressList
-            batch={activeBatch}
-            user={user}
-            labScope={repOnly ? user.lab || '' : ''}
-          />
+          <StudentProgressList batch={activeBatch} user={user} labScope="" />
         ) : (
           <MyProgress batch={activeBatch} user={user} />
         )}

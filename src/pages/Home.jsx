@@ -211,7 +211,7 @@ export default function Home() {
               Keep going
             </h3>
             <div className="mt-2 space-y-1.5">
-              <Link to="/progress?tab=ranks" className="flex items-center justify-between rounded-lg px-2 py-2 text-xs font-semibold hover:bg-muted">
+              <Link to="/progress" className="flex items-center justify-between rounded-lg px-2 py-2 text-xs font-semibold hover:bg-muted">
                 Batch leaderboard <ArrowRight className="h-3 w-3" />
               </Link>
               <Link to="/gallery?view=mine" className="flex items-center justify-between rounded-lg px-2 py-2 text-xs font-semibold hover:bg-muted">

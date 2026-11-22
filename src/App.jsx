@@ -73,7 +73,7 @@ const AuthenticatedApp = () => {
         <Route path="/work/:id" element={<WorkDetail />} />
         <Route path="/upload" element={<UploadWork />} />
         <Route path="/my-works" element={<Navigate to="/gallery?view=mine" replace />} />
-        <Route path="/leaderboard" element={<Navigate to="/progress?tab=ranks" replace />} />
+        <Route path="/leaderboard" element={<Navigate to="/progress" replace />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/profile" element={<Profile />} />

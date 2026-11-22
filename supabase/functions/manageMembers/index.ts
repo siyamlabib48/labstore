@@ -1,6 +1,7 @@
 import { getCaller, mapUser, serviceClient, svc } from '../_shared/svc.ts';
 import {
   canApproveSignups,
+  canAssignLeaders,
   canChangeRoles,
   canCoordinate,
   canManageBatch,
@@ -62,10 +63,9 @@ async function handler(req: Request) {
       return all;
     };
 
-    // Emails are personal data: only the people who manage the batch see
-    // them, plus the lab's CR/ACR who lead it. Everyone else in the batch
-    // gets the roster without contact details.
-    const canSeeEmails = owner || staffManager || ['cr', 'acr'].includes(caller.staff_role);
+    // Emails are personal data: only the people who manage the batch see them.
+    // Everyone else in the batch gets the roster without contact details.
+    const canSeeEmails = owner || staffManager;
 
     if (action === 'directory') {
       const batchId = String(body.batch_id || '');
@@ -108,7 +108,7 @@ async function handler(req: Request) {
         // A teacher or coordinator may place an unassigned sign-up straight into
         // their own batch's lab, but never pull in another batch's member.
         if (target.batch && !sameBatch(caller, target.batch)) return forbidden();
-        if (['coordinator', 'teacher'].includes(target.staff_role)) return forbidden();
+        if (['coordinator', 'teacher', 'dedicated_teacher'].includes(target.staff_role)) return forbidden();
       }
 
       const batch = await loadBatch(batchId);
@@ -121,10 +121,29 @@ async function handler(req: Request) {
 
       const patch: Record<string, unknown> = { batch: batchId, lab, approval_status: 'approved' };
       if (body.staff_role !== undefined) {
-        // Role changes are an owner-only capability.
-        if (!canChangeRoles(caller)) return forbidden();
         if (!STAFF_ROLES.includes(body.staff_role)) {
           return Response.json({ error: 'Unknown staff role' }, { status: 400 });
+        }
+        // Role changes are an owner-only capability, with one exception:
+        // a coordinator (their batch) or a dedicated teacher (their lab)
+        // may appoint leaders — moving a student between member/cr/acr.
+        if (!canChangeRoles(caller)) {
+          const leaderRoles = ['member', 'cr', 'acr'];
+          const inScope =
+            caller.staff_role === 'coordinator'
+              ? sameBatch(caller, batchId)
+              : caller.staff_role === 'dedicated_teacher' &&
+                sameBatch(caller, batchId) &&
+                !!caller.lab &&
+                caller.lab === lab;
+          if (
+            !canAssignLeaders(caller) ||
+            !leaderRoles.includes(body.staff_role) ||
+            !leaderRoles.includes(target.staff_role || 'member') ||
+            !inScope
+          ) {
+            return forbidden();
+          }
         }
         patch.staff_role = body.staff_role;
       }

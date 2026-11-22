@@ -10,6 +10,7 @@ export default function MemberRow({
   labs,
   isOwner,
   canRemove,
+  canAssignLeaders,
   onChangeLab,
   onChangeRole,
   onRemove,
@@ -17,6 +18,12 @@ export default function MemberRow({
 }) {
   const role = roleOf(member);
   const isBusy = busyId === member.id;
+  // Coordinators and dedicated teachers cannot change roles in general,
+  // but they may appoint their scope's leaders: a student can be moved
+  // between Student / CR / ACR. The server enforces the scope (batch
+  // for a coordinator, own lab for a dedicated teacher).
+  const leaderAssignable =
+    !isOwner && canAssignLeaders && ['member', 'cr', 'acr'].includes(member.staff_role || 'member');
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-muted/40">
@@ -37,6 +44,19 @@ export default function MemberRow({
           className={cn('h-7 rounded-md border border-border px-1.5 text-[10px] font-semibold', role.chip)}
         >
           {ASSIGNABLE_ROLES.map((key) => (
+            <option key={key} value={key}>
+              {staffRoleOf(key).short}
+            </option>
+          ))}
+        </select>
+      ) : leaderAssignable ? (
+        <select
+          value={member.staff_role || 'member'}
+          onChange={(event) => onChangeRole(member, event.target.value)}
+          title="Appoint as CR / ACR"
+          className={cn('h-7 rounded-md border border-border px-1.5 text-[10px] font-semibold', role.chip)}
+        >
+          {['member', 'cr', 'acr'].map((key) => (
             <option key={key} value={key}>
               {staffRoleOf(key).short}
             </option>

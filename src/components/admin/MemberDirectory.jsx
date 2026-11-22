@@ -9,6 +9,7 @@ export default function MemberDirectory({
   batch,
   isOwner,
   canRemove,
+  canAssignLeaders,
   onChangeLab,
   onChangeRole,
   onRemove,
@@ -104,6 +105,7 @@ export default function MemberDirectory({
                     labs={labs}
                     isOwner={isOwner}
                     canRemove={canRemove}
+                    canAssignLeaders={canAssignLeaders}
                     onChangeLab={onChangeLab}
                     onChangeRole={onChangeRole}
                     onRemove={onRemove}

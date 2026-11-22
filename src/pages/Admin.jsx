@@ -6,6 +6,7 @@ import { useBatch } from '@/lib/BatchContext';
 import {
   canEditBatches,
   canManageBatch,
+  canAssignLeaders,
   canRemoveMembers,
   isOwner as isOwnerOf,
   removeNeedsOverride,
@@ -27,6 +28,7 @@ export default function Admin() {
   const canBatches = canEditBatches(user);
   const canManage = canManageBatch(user);
   const removable = canRemoveMembers(user);
+  const canLeaders = canAssignLeaders(user);
 
   const scope = owner ? batches.filter((item) => item.status !== 'archived') : available;
   const [batchId, setBatchId] = useState('');
@@ -324,6 +326,7 @@ export default function Admin() {
             batch={batch}
             isOwner={owner}
             canRemove={removable}
+            canAssignLeaders={canLeaders}
             onChangeLab={changeLab}
             onChangeRole={changeRole}
             onRemove={requestRemove}
