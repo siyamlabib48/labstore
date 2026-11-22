@@ -1,22 +1,13 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { supabase, BYPASS_AUTH, fetchProfile } from '@/api/supabaseClient';
+import { getDemoUser } from '@/lib/demoRoles';
 
 const AuthContext = createContext();
 
 // Demo user for the BYPASS_AUTH build flag (see supabaseClient.js): a local
-// owner user that passes every client-side gate so the pages can be
-// reviewed without signing in. Unlocks the UI shell only, never data.
-const DEMO_USER = {
-  id: 'demo-user',
-  email: 'demo@labstore.local',
-  full_name: 'Demo User',
-  role: 'admin',
-  is_admin: true,
-  approval_status: 'approved',
-  staff_role: 'owner',
-  batch: null,
-  lab: null,
-};
+// user that passes the client-side gates so the pages can be reviewed
+// without signing in. Its role comes from the demo role switcher preset
+// (demoRoles.js) — owner by default. Unlocks the UI shell only, never data.
 
 // There is no hosted "app settings" endpoint anymore; the only consumer
 // needed the app id, so a static object keeps that contract.
@@ -55,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAppState = async () => {
     if (BYPASS_AUTH) {
-      setUser(DEMO_USER);
+      setUser(getDemoUser());
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setIsLoadingPublicSettings(false);
@@ -156,9 +147,10 @@ export const AuthProvider = ({ children }) => {
   // so saved profile changes appear instantly instead of flashing a spinner.
   const refreshUser = async () => {
     if (BYPASS_AUTH) {
-      setUser(DEMO_USER);
+      const demoUser = getDemoUser();
+      setUser(demoUser);
       setIsAuthenticated(true);
-      return DEMO_USER;
+      return demoUser;
     }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) return null;

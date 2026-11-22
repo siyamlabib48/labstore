@@ -27,6 +27,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Mfa from '@/pages/Mfa';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import DemoRoleSwitcher from '@/components/DemoRoleSwitcher';
 import RoleGuard from '@/components/gates/RoleGuard';
 import PendingApproval from '@/pages/PendingApproval';
 import { canManageBatch } from '@/lib/staffRoles';
@@ -103,6 +104,7 @@ function App() {
           <ErrorBoundary>
             <AuthenticatedApp />
           </ErrorBoundary>
+          <DemoRoleSwitcher />
         </Router>
         <Toaster />
       </QueryClientProvider>
