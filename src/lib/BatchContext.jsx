@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { isOwner as isOwnerOf } from '@/lib/staffRoles';
 
@@ -15,7 +15,7 @@ export function BatchProvider({ children }) {
 
   useEffect(() => {
     let alive = true;
-    base44.entities.Batch
+    db.entities.Batch
       .list({ sort: 'created_date', limit: 100 })
       .then((page) => {
         if (!alive) return;
@@ -50,7 +50,7 @@ export function BatchProvider({ children }) {
     setActiveBatchId,
     loading,
     isOwner,
-    refresh: () => base44.entities.Batch.list({ sort: 'created_date', limit: 100 }).then((p) => setBatches(p.items || [])),
+    refresh: () => db.entities.Batch.list({ sort: 'created_date', limit: 100 }).then((p) => setBatches(p.items || [])),
   };
 
   return <BatchContext.Provider value={value}>{children}</BatchContext.Provider>;

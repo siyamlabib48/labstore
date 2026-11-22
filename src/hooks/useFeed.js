@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 import { REACTION_KEYS, emptyReactions } from '@/lib/reactions';
 import { DEFAULT_VISIBILITY } from '@/lib/postVisibility';
 
@@ -87,9 +87,9 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
       // past the cap are missing from the counts until a reload — revisit if
       // a page of posts regularly exceeds ~500 of any one of them combined.
       const [likePage, votePage, commentPage] = await Promise.all([
-        base44.entities.PostLike.filter({ post_id: { $in: ids } }, { limit: 500 }),
-        base44.entities.PostVote.filter({ post_id: { $in: ids } }, { limit: 500 }),
-        base44.entities.PostComment.filter({ post_id: { $in: ids } }, { sort: 'created_date', limit: 500 }),
+        db.entities.PostLike.filter({ post_id: { $in: ids } }, { limit: 500 }),
+        db.entities.PostVote.filter({ post_id: { $in: ids } }, { limit: 500 }),
+        db.entities.PostComment.filter({ post_id: { $in: ids } }, { sort: 'created_date', limit: 500 }),
       ]);
 
       const likeItems = likePage.items || [];
@@ -102,7 +102,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
       const commentIds = commentItems.map((row) => row.id);
       const commentVoteItems = commentIds.length
         ? (
-            await base44.entities.CommentVote.filter(
+            await db.entities.CommentVote.filter(
               { comment_id: { $in: commentIds } },
               { limit: 500 }
             )
@@ -150,7 +150,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
     const ids = [...new Set(rows.map((row) => row.created_by_id).filter(Boolean))];
     if (ids.length === 0) return rows;
     try {
-      const { authors } = await base44.functions.invoke('getProfile', { user_ids: ids });
+      const { authors } = await db.functions.invoke('getProfile', { user_ids: ids });
       const byId = new Map((authors || []).map((author) => [author.id, author]));
       return rows.map((row) => {
         const author = byId.get(row.created_by_id);
@@ -174,7 +174,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
     setLoading(true);
     setError('');
     try {
-      const page = await base44.entities.Post.filter(pageQuery(), { sort: '-created_date', limit: PAGE_SIZE });
+      const page = await db.entities.Post.filter(pageQuery(), { sort: '-created_date', limit: PAGE_SIZE });
       const rows = await attachAuthors(page.items || []);
       setPosts(rows);
       setCursor(page.next_cursor || null);
@@ -194,7 +194,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
     if (!cursor || loadingMore) return;
     setLoadingMore(true);
     try {
-      const page = await base44.entities.Post.filter(
+      const page = await db.entities.Post.filter(
         pageQuery(),
         { sort: '-created_date', limit: PAGE_SIZE, cursor }
       );
@@ -211,7 +211,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
   };
 
   const createPost = async ({ content, image_uri, visibility }) => {
-    const row = await base44.entities.Post.create({
+    const row = await db.entities.Post.create({
       content,
       image_uri: image_uri || '',
       batch: batchId,
@@ -236,14 +236,14 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
   // Text-only edit: the attached image is never touched. The edited flag is
   // set server-side so the card can show its "Edited" label on every device.
   const updatePost = async (postId, content) => {
-    await base44.entities.Post.update(postId, { content, edited: true });
+    await db.entities.Post.update(postId, { content, edited: true });
     setPosts((prev) =>
       prev.map((row) => (row.id === postId ? { ...row, content, edited: true } : row))
     );
   };
 
   const deletePost = async (postId) => {
-    await base44.entities.Post.delete(postId);
+    await db.entities.Post.delete(postId);
     setPosts((prev) => prev.filter((row) => row.id !== postId));
   };
 
@@ -268,28 +268,28 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
 
     try {
       if (removing && current.rowId) {
-        await base44.entities.PostLike.delete(current.rowId);
+        await db.entities.PostLike.delete(current.rowId);
         commitLikes(postId, { ...optimistic, rowId: null });
       } else if (current.rowId) {
-        await base44.entities.PostLike.update(current.rowId, { type });
+        await db.entities.PostLike.update(current.rowId, { type });
       } else {
         // Defensive check so a stale page can never add a second row.
-        const existing = await base44.entities.PostLike.filter(
+        const existing = await db.entities.PostLike.filter(
           { post_id: postId, user_id: user.id },
           { limit: 1 }
         );
         const row = existing.items?.[0];
         if (row) {
-          await base44.entities.PostLike.update(row.id, { type });
+          await db.entities.PostLike.update(row.id, { type });
           commitLikes(postId, { ...optimistic, rowId: row.id });
         } else {
-          const created = await base44.entities.PostLike.create({
+          const created = await db.entities.PostLike.create({
             post_id: postId,
             user_id: user.id,
             type,
           });
           commitLikes(postId, { ...optimistic, rowId: created.id });
-          base44.functions.invoke('notify', { action: 'post_like', post_id: postId }).catch(() => {});
+          db.functions.invoke('notify', { action: 'post_like', post_id: postId }).catch(() => {});
         }
       }
     } catch (err) {
@@ -312,30 +312,30 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
 
     try {
       if (current.mine === value && current.rowId) {
-        await base44.entities.PostVote.delete(current.rowId);
+        await db.entities.PostVote.delete(current.rowId);
         commitVotes(postId, { ...optimistic, rowId: null });
       } else if (current.rowId) {
-        await base44.entities.PostVote.update(current.rowId, { value });
+        await db.entities.PostVote.update(current.rowId, { value });
       } else {
         // Defensive check so a stale page can never add a second row:
         // if a row already exists server-side, toggle against it instead.
-        const existing = await base44.entities.PostVote.filter(
+        const existing = await db.entities.PostVote.filter(
           { post_id: postId, user_id: user.id },
           { limit: 1 }
         );
         const row = existing.items?.[0];
         if (row && row.value === value) {
-          await base44.entities.PostVote.delete(row.id);
+          await db.entities.PostVote.delete(row.id);
           commitVotes(postId, { score: current.score - (row.value || 0), mine: 0, rowId: null });
         } else if (row) {
-          await base44.entities.PostVote.update(row.id, { value });
+          await db.entities.PostVote.update(row.id, { value });
           commitVotes(postId, {
             score: current.score - (row.value || 0) + value,
             mine: value,
             rowId: row.id,
           });
         } else {
-          const created = await base44.entities.PostVote.create({
+          const created = await db.entities.PostVote.create({
             post_id: postId,
             user_id: user.id,
             value,
@@ -351,7 +351,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
 
   const addComment = async (postId, body, parentId) => {
     if (parentId) {
-      const parent = await base44.entities.PostComment.get(parentId).catch(() => null);
+      const parent = await db.entities.PostComment.get(parentId).catch(() => null);
       if (!parent || parent.post_id !== postId) {
         throw new Error('That reply is no longer available.');
       }
@@ -363,7 +363,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
     // approved member, while every other visibility stays batch-scoped. The
     // author snapshots below stay the commenter's own.
     const post = posts.find((row) => row.id === postId);
-    const row = await base44.entities.PostComment.create({
+    const row = await db.entities.PostComment.create({
       post_id: postId,
       body,
       parent_id: parentId || '',
@@ -372,11 +372,11 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
       author_name: user.full_name || user.email || '',
       author_lab: user.lab || '',
     });
-    base44.functions.invoke('notify', { action: 'post_comment', comment_id: row.id }).catch(() => {});
+    db.functions.invoke('notify', { action: 'post_comment', comment_id: row.id }).catch(() => {});
     if (parentId) {
       // A reply also notifies the parent comment's author (the server skips
       // it when that author is the post author — post_comment covered them).
-      base44.functions.invoke('notify', { action: 'comment_reply', comment_id: row.id }).catch(() => {});
+      db.functions.invoke('notify', { action: 'comment_reply', comment_id: row.id }).catch(() => {});
     }
     commitCommentVotes(row.id, { score: 0, mine: 0, rowId: null });
     setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), row] }));
@@ -397,34 +397,34 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
 
     try {
       if (current.mine === value && current.rowId) {
-        await base44.entities.CommentVote.delete(current.rowId);
+        await db.entities.CommentVote.delete(current.rowId);
         commitCommentVotes(commentId, { ...optimistic, rowId: null });
       } else if (current.rowId) {
-        await base44.entities.CommentVote.update(current.rowId, { value });
+        await db.entities.CommentVote.update(current.rowId, { value });
       } else {
         // Defensive check so a stale page can never add a second row:
         // if a row already exists server-side, toggle against it instead.
-        const existing = await base44.entities.CommentVote.filter(
+        const existing = await db.entities.CommentVote.filter(
           { comment_id: commentId, user_id: user.id },
           { limit: 1 }
         );
         const row = existing.items?.[0];
         if (row && row.value === value) {
-          await base44.entities.CommentVote.delete(row.id);
+          await db.entities.CommentVote.delete(row.id);
           commitCommentVotes(commentId, {
             score: current.score - (row.value || 0),
             mine: 0,
             rowId: null,
           });
         } else if (row) {
-          await base44.entities.CommentVote.update(row.id, { value });
+          await db.entities.CommentVote.update(row.id, { value });
           commitCommentVotes(commentId, {
             score: current.score - (row.value || 0) + value,
             mine: value,
             rowId: row.id,
           });
         } else {
-          const created = await base44.entities.CommentVote.create({
+          const created = await db.entities.CommentVote.create({
             comment_id: commentId,
             user_id: user.id,
             value,
@@ -440,7 +440,7 @@ export default function useFeed(user, batchId, labFilter = '', academyScope = fa
 
   // Removing a comment lifts its replies to the top level so no reply vanishes.
   const deleteComment = async (postId, commentId) => {
-    await base44.entities.PostComment.delete(commentId);
+    await db.entities.PostComment.delete(commentId);
     setComments((prev) => ({
       ...prev,
       [postId]: (prev[postId] || [])

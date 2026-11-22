@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/dataClient';
 
 const LIMIT = 80;
 const REFRESH_DELAY = 400;
@@ -30,7 +30,7 @@ export default function useChat({ batchId, scope, lab, user }) {
       setLoading(false);
       return;
     }
-    const page = await base44.entities.ChatMessage.filter(roomQuery(), {
+    const page = await db.entities.ChatMessage.filter(roomQuery(), {
       sort: '-created_date',
       limit: LIMIT,
     });
@@ -46,7 +46,7 @@ export default function useChat({ batchId, scope, lab, user }) {
     setLoading(true);
     load();
 
-    const unsubscribe = base44.entities.ChatMessage.subscribe((event) => {
+    const unsubscribe = db.entities.ChatMessage.subscribe((event) => {
       const row = event?.data;
       // Only this room's events refresh this room, and a burst of events
       // coalesces into one reload.
@@ -69,7 +69,7 @@ export default function useChat({ batchId, scope, lab, user }) {
     if (!cursorRef.current || loadingOlder || !inMyBatch) return;
     setLoadingOlder(true);
     try {
-      const page = await base44.entities.ChatMessage.filter(roomQuery(), {
+      const page = await db.entities.ChatMessage.filter(roomQuery(), {
         sort: '-created_date',
         limit: LIMIT,
         cursor: cursorRef.current,
@@ -88,7 +88,7 @@ export default function useChat({ batchId, scope, lab, user }) {
 
   const send = async (body, attachments = []) => {
     if (!inMyBatch) throw new Error('You can only post in your own batch chat.');
-    const row = await base44.entities.ChatMessage.create({
+    const row = await db.entities.ChatMessage.create({
       body: body || '',
       attachments,
       scope,
@@ -102,7 +102,7 @@ export default function useChat({ batchId, scope, lab, user }) {
   };
 
   const remove = async (id) => {
-    await base44.entities.ChatMessage.delete(id);
+    await db.entities.ChatMessage.delete(id);
     setMessages((prev) => prev.filter((item) => item.id !== id));
   };
 
