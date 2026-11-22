@@ -69,11 +69,13 @@ async function handler(req: Request) {
     ]);
 
     // Per-field privacy: the member picks an audience for each personal field
-    // (everyone / batch / friends / only_me). A field the viewer may not see
-    // is omitted from the response entirely — never sent blanked. Fields with
-    // no stored choice fall back to today's behaviour (batch), except marital
-    // status, which defaults to only_me.
-    const AUDIENCES = ['everyone', 'batch', 'friends', 'only_me'];
+    // (academy / batch / friends / only_me). 'academy' is the single widest
+    // audience — it replaced the old 'everyone', which meant the same thing
+    // in practice, so a stored 'everyone' is read as 'academy'. A field the
+    // viewer may not see is omitted from the response entirely — never sent
+    // blanked. Fields with no stored choice fall back to today's behaviour
+    // (batch), except marital status, which defaults to only_me.
+    const AUDIENCES = ['academy', 'batch', 'friends', 'only_me'];
     const DEFAULT_AUDIENCE: Record<string, string> = {
       website: 'batch',
       gender: 'batch',
@@ -85,12 +87,13 @@ async function handler(req: Request) {
     const viewerIsAdmin = isOwner(user);
     const audienceOf = (field: string) => {
       const stored = target[`${field}_privacy`];
+      if (stored === 'everyone') return 'academy';
       return AUDIENCES.includes(stored) ? stored : DEFAULT_AUDIENCE[field];
     };
     const canSee = (field: string) => {
       if (isSelf || viewerIsAdmin) return true;
       const audience = audienceOf(field);
-      if (audience === 'everyone') return true;
+      if (audience === 'academy') return true;
       if (audience === 'batch') return sameBatch(user, target.batch);
       if (audience === 'friends') return isFriend;
       return false;

@@ -16,8 +16,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
+// 'academy' is the single widest audience (it replaced the old 'everyone',
+// which meant the same thing in practice). A stored 'everyone' from before
+// the merge is read as 'academy'.
+const storedAudience = (value, fallback) => (value === 'everyone' ? 'academy' : value || fallback);
+
 const AUDIENCE_OPTIONS = [
-  { value: 'everyone', label: 'Everyone' },
+  { value: 'academy', label: 'Academy' },
   { value: 'batch', label: 'My batch' },
   { value: 'friends', label: 'Friends' },
   { value: 'only_me', label: 'Only me' },
@@ -64,11 +69,11 @@ export default function EditProfileDialog({ user, onSaved }) {
     current_institution: user?.current_institution || '',
     previous_institution: user?.previous_institution || '',
     marital_status: user?.marital_status || '',
-    website_privacy: user?.website_privacy || 'batch',
-    gender_privacy: user?.gender_privacy || 'batch',
-    current_institution_privacy: user?.current_institution_privacy || 'batch',
-    previous_institution_privacy: user?.previous_institution_privacy || 'batch',
-    marital_status_privacy: user?.marital_status_privacy || 'only_me',
+    website_privacy: storedAudience(user?.website_privacy, 'batch'),
+    gender_privacy: storedAudience(user?.gender_privacy, 'batch'),
+    current_institution_privacy: storedAudience(user?.current_institution_privacy, 'batch'),
+    previous_institution_privacy: storedAudience(user?.previous_institution_privacy, 'batch'),
+    marital_status_privacy: storedAudience(user?.marital_status_privacy, 'only_me'),
   });
 
   const change = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
